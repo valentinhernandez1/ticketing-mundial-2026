@@ -1,5 +1,6 @@
 package uy.edu.ucu.ticketing.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uy.edu.ucu.ticketing.service.DispositivoService;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dispositivos")
+@PreAuthorize("hasRole('ADMINISTRADOR_PAIS')")
 public class DispositivoController {
 
     private final DispositivoService dispositivoService;

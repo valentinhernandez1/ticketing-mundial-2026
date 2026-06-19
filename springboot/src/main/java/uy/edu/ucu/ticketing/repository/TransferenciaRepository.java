@@ -34,12 +34,18 @@ public class TransferenciaRepository {
         return count != null && count > 0;
     }
 
-    public Long insertarTransferencia(Long idEntrada, Long idOrigen, Long idDestino) {
+    // bloqueo la entrada y creo la transferencia pendiente
+    public Long iniciarTransferencia(Long idEntrada, Long idOrigen, Long idDestino) {
+        jdbc.update("UPDATE entrada SET estado = 'TRANSFERIDA' WHERE id_entrada = ?", idEntrada);
         return jdbc.queryForObject("""
                 INSERT INTO transferencia (id_entrada, id_usuario_origen, id_usuario_destino, estado)
                 VALUES (?, ?, ?, 'PENDIENTE')
                 RETURNING id_transferencia
                 """, Long.class, idEntrada, idOrigen, idDestino);
+    }
+
+    public Long insertarTransferencia(Long idEntrada, Long idOrigen, Long idDestino) {
+        return iniciarTransferencia(idEntrada, idOrigen, idDestino);
     }
 
     // acepto: cambio el titular de la entrada y sumo 1 al contador
@@ -74,7 +80,7 @@ public class TransferenciaRepository {
 
     public void rechazarTransferencia(Long idTransferencia, Long idSolicitante) {
         Map<String, Object> t = jdbc.queryForMap(
-                "SELECT id_usuario_destino, estado::text FROM transferencia WHERE id_transferencia = ?",
+                "SELECT id_entrada, id_usuario_destino, estado::text FROM transferencia WHERE id_transferencia = ?",
                 idTransferencia);
 
         if (!idSolicitante.equals(((Number) t.get("id_usuario_destino")).longValue()))
@@ -84,19 +90,27 @@ public class TransferenciaRepository {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "La transferencia ya fue " + t.get("estado"));
 
+        Long idEntrada = ((Number) t.get("id_entrada")).longValue();
+
         jdbc.update("""
                 UPDATE transferencia SET estado = 'RECHAZADA', fecha_aceptacion = NOW()
                 WHERE id_transferencia = ?
                 """, idTransferencia);
+
+        // devuelvo la entrada al estado EMITIDA para que el dueño original pueda usarla
+        jdbc.update("UPDATE entrada SET estado = 'EMITIDA' WHERE id_entrada = ?", idEntrada);
     }
 
     // las que inició y las que recibió
     public List<Map<String, Object>> transferenciasDeUsuario(Long idUsuario) {
         return jdbc.queryForList("""
-                SELECT t.id_transferencia AS id, t.id_entrada,
-                       t.id_usuario_origen, t.id_usuario_destino,
-                       t.fecha_transferencia, t.fecha_aceptacion,
-                       t.estado::text AS estado
+                SELECT t.id_transferencia    AS "idTransferencia",
+                       t.id_entrada          AS "idEntrada",
+                       t.id_usuario_origen   AS "idOrigen",
+                       t.id_usuario_destino  AS "idDestino",
+                       t.fecha_transferencia AS "fecha",
+                       t.fecha_aceptacion    AS "fechaAceptacion",
+                       t.estado::text        AS "estado"
                 FROM transferencia t
                 WHERE t.id_usuario_origen = ? OR t.id_usuario_destino = ?
                 ORDER BY t.fecha_transferencia DESC

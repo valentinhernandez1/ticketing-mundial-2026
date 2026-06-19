@@ -51,7 +51,7 @@ public class TransferenciaService {
         if (idDestino.equals(idSolicitante))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No podés transferirte la entrada a vos mismo");
 
-        return transferenciaRepo.insertarTransferencia(req.idEntrada(), idSolicitante, idDestino);
+        return transferenciaRepo.iniciarTransferencia(req.idEntrada(), idSolicitante, idDestino);
     }
 
     @Transactional

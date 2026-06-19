@@ -79,10 +79,11 @@ public class ValidacionService {
             resultado = "ACEPTADO";
         }
 
-        // registro el intento (aceptado o rechazado) para auditoría
-        validacionRepo.insertarValidacion(idEntrada,
-                idToken != null ? idToken : -1L,
-                idFuncionario, req.idDispositivo(), req.codigoQr(), resultado);
+        // registro el intento para auditoría — si fue rechazado por token inválido no tengo id_token
+        if (idToken != null) {
+            validacionRepo.insertarValidacion(idEntrada, idToken,
+                    idFuncionario, req.idDispositivo(), req.codigoQr(), resultado);
+        }
 
         if ("ACEPTADO".equals(resultado)) {
             validacionRepo.consumirEntrada(idEntrada);
