@@ -26,13 +26,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             try {
                 String token = header.substring(7);
-                Long   uid = jwt.getUid(token);     // principal = id del usuario autenticado
+                Long   uid = jwt.getUid(token);     // el principal es el id del usuario
                 String rol = jwt.getRol(token);
                 var auth = new UsernamePasswordAuthenticationToken(
                         uid, null, List.of(new SimpleGrantedAuthority("ROLE_" + rol)));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (Exception e) {
-                // Token presente pero invalido o vencido: responder 401 (no seguir como anonimo)
+                // token presente pero inválido o vencido, devuelvo 401
                 SecurityContextHolder.clearContext();
                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token invalido o expirado");
                 return;

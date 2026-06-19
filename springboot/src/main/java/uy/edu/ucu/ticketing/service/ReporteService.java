@@ -2,15 +2,28 @@ package uy.edu.ucu.ticketing.service;
 
 import org.springframework.stereotype.Service;
 import uy.edu.ucu.ticketing.repository.ReporteRepository;
+
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ReporteService {
 
-    private final ReporteRepository repo;
-    public ReporteService(ReporteRepository repo) { this.repo = repo; }
+    private final ReporteRepository reporteRepo;
 
-    public List<Object[]> rankingCompradores(int top) { return repo.rankingCompradores(top); }
-    public List<Object[]> eventosTop(int top)         { return repo.eventosTop(top); }
-    public List<Object[]> estadisticasEstadio()       { return repo.estadisticasEstadio(); }
+    public ReporteService(ReporteRepository reporteRepo) {
+        this.reporteRepo = reporteRepo;
+    }
+
+    public List<Map<String, Object>> rankingCompradores() {
+        return reporteRepo.rankingCompradores();
+    }
+
+    public List<Map<String, Object>> eventosTop() {
+        return reporteRepo.eventosTop();
+    }
+
+    public List<Map<String, Object>> estadisticasEstadio() {
+        return reporteRepo.estadisticasEstadio();
+    }
 }

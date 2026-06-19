@@ -1,24 +1,28 @@
 package uy.edu.ucu.ticketing.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import uy.edu.ucu.ticketing.domain.Venta;
-import java.util.List;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
-/**
- * Reportes (Fase 6): se apoyan en las funciones SQL del modelo fisico
- * (fn_reporte_*) mediante consultas nativas. Devuelven Object[] que el
- * service mapea a DTOs.
- */
-public interface ReporteRepository extends JpaRepository<Venta, Long> {
+import java.util.*;
 
-    @Query(value = "SELECT * FROM fn_reporte_ranking_compradores(:top)", nativeQuery = true)
-    List<Object[]> rankingCompradores(@Param("top") int top);
+@Repository
+public class ReporteRepository {
 
-    @Query(value = "SELECT * FROM fn_reporte_eventos_top(:top)", nativeQuery = true)
-    List<Object[]> eventosTop(@Param("top") int top);
+    private final JdbcTemplate jdbc;
 
-    @Query(value = "SELECT * FROM fn_reporte_estadisticas_estadio()", nativeQuery = true)
-    List<Object[]> estadisticasEstadio();
+    public ReporteRepository(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    public List<Map<String, Object>> rankingCompradores() {
+        return jdbc.queryForList("SELECT * FROM fn_reporte_ranking_compradores(10)");
+    }
+
+    public List<Map<String, Object>> eventosTop() {
+        return jdbc.queryForList("SELECT * FROM fn_reporte_eventos_top(10)");
+    }
+
+    public List<Map<String, Object>> estadisticasEstadio() {
+        return jdbc.queryForList("SELECT * FROM fn_reporte_estadisticas_estadio()");
+    }
 }

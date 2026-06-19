@@ -1,11 +1,7 @@
--- =====================================================================
---  FASE 6 - CONSULTAS SQL AVANZADAS
---  Los parametros se muestran como :param (reemplazar por el valor real).
--- =====================================================================
+﻿-- Consultas SQL para reportes y listados
+-- Los parametros se muestran como :param
 
--- ---------------------------------------------------------------------
--- 1) RANKING DE COMPRADORES (entradas adquiridas y monto gastado)
--- ---------------------------------------------------------------------
+-- RANKING DE COMPRADORES (entradas adquiridas y monto gastado)
 SELECT u.id_usuario,
        u.nombre || ' ' || u.apellido        AS comprador,
        u.email,
@@ -18,11 +14,9 @@ SELECT u.id_usuario,
  GROUP BY u.id_usuario, u.nombre, u.apellido, u.email
  ORDER BY entradas_compradas DESC, gasto_entradas DESC;
 
--- ---------------------------------------------------------------------
--- 2) EVENTOS CON MAS VENTAS (con cupo total y % de ocupacion)
+-- EVENTOS CON MAS VENTAS (con cupo total y % de ocupacion)
 --    Se usan subconsultas correlacionadas para evitar el doble conteo
 --    que produciria sumar cupos sobre el JOIN con entradas.
--- ---------------------------------------------------------------------
 SELECT ev.id_evento,
        sl.nombre || ' vs ' || sv.nombre AS partido,
        est.nombre                       AS estadio,
@@ -48,10 +42,8 @@ SELECT ev.id_evento,
        ) cupos ON TRUE
  ORDER BY vendidas.entradas_vendidas DESC;
 
--- ---------------------------------------------------------------------
--- 3) HISTORIAL COMPLETO DE UNA ENTRADA (cadena de custodia)
+-- HISTORIAL COMPLETO DE UNA ENTRADA (cadena de custodia)
 --    Emision -> transferencias aceptadas -> validacion final.
--- ---------------------------------------------------------------------
 WITH eventos_entrada AS (
     -- Emision
     SELECT e.id_entrada,
@@ -94,9 +86,7 @@ SELECT ee.evento,
   LEFT JOIN usuario ud ON ud.id_usuario = ee.usuario_destino
  ORDER BY ee.fecha, ee.orden;
 
--- ---------------------------------------------------------------------
--- 4) ENTRADAS QUE UN USUARIO TIENE ASIGNADAS ACTUALMENTE
--- ---------------------------------------------------------------------
+-- ENTRADAS QUE UN USUARIO TIENE ASIGNADAS ACTUALMENTE
 SELECT e.id_entrada,
        e.codigo_unico,
        sl.nombre || ' vs ' || sv.nombre AS partido,
@@ -116,9 +106,7 @@ SELECT e.id_entrada,
    AND e.estado IN ('EMITIDA','TRANSFERIDA')
  ORDER BY ev.fecha_hora_inicio;
 
--- ---------------------------------------------------------------------
--- 5) TRANSFERENCIAS REALIZADAS POR UN USUARIO (enviadas y recibidas)
--- ---------------------------------------------------------------------
+-- TRANSFERENCIAS REALIZADAS POR UN USUARIO (enviadas y recibidas)
 SELECT t.id_transferencia,
        t.id_entrada,
        CASE WHEN t.id_usuario_origen = 1 THEN 'ENVIADA' ELSE 'RECIBIDA' END AS rol,   -- reemplazar con el id_usuario deseado
@@ -134,9 +122,7 @@ SELECT t.id_transferencia,
     OR t.id_usuario_destino = 1
  ORDER BY t.fecha_transferencia DESC;
 
--- ---------------------------------------------------------------------
--- 6) ESTADISTICAS POR ESTADIO (eventos, ventas, recaudacion, ocupacion)
--- ---------------------------------------------------------------------
+-- ESTADISTICAS POR ESTADIO (eventos, ventas, recaudacion, ocupacion)
 WITH cupos AS (
     SELECT ev.id_estadio,
            COUNT(DISTINCT ev.id_evento) AS eventos,
@@ -168,6 +154,3 @@ SELECT est.id_estadio,
   LEFT JOIN ventas v ON v.id_estadio = est.id_estadio
  ORDER BY recaudacion DESC NULLS LAST;
 
--- =====================================================================
--- FIN CONSULTAS
--- =====================================================================

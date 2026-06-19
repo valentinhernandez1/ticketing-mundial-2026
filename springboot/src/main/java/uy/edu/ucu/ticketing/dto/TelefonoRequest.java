@@ -8,7 +8,7 @@ public record TelefonoRequest(
         @Pattern(regexp = "MOVIL|FIJO|TRABAJO|OTRO", message = "tipo debe ser MOVIL, FIJO, TRABAJO u OTRO")
         String tipo
 ) {
-    /** Si el cliente no manda tipo, se asume MOVIL (mismo default que la BD). */
+    // si no se manda tipo, se asume MOVIL
     public String tipoEfectivo() {
         return (tipo == null || tipo.isBlank()) ? "MOVIL" : tipo;
     }

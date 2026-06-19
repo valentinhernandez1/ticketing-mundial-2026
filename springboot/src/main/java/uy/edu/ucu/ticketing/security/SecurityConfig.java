@@ -23,18 +23,22 @@ public class SecurityConfig {
             .csrf(c -> c.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Frontend estatico (SPA servida por el mismo backend: sin CORS)
-                .requestMatchers(HttpMethod.GET, "/", "/index.html", "/app.js", "/styles.css",
-                        "/favicon.ico", "/manifest.webmanifest").permitAll()
+                // todos los archivos estáticos del frontend son públicos
+                .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
+                        "/assets/**", "/*.js", "/*.css", "/*.svg", "/*.png",
+                        "/app.js", "/styles.css").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                // RBAC por endpoint (complementa los @PreAuthorize de cada controller)
                 .requestMatchers("/api/compras/**").hasRole("USUARIO_GENERAL")
-                .requestMatchers("/api/transferencias/**").hasRole("USUARIO_GENERAL")
-                .requestMatchers("/api/usuarios/**").hasRole("USUARIO_GENERAL")
+                // cualquier usuario autenticado puede recibir o ver transferencias
+                .requestMatchers("/api/transferencias/**").authenticated()
+                .requestMatchers("/api/usuarios/**").authenticated()
                 .requestMatchers("/api/validaciones/**").hasRole("FUNCIONARIO_VALIDACION")
                 .requestMatchers("/api/estadios/**").hasRole("ADMINISTRADOR_PAIS")
                 .requestMatchers("/api/eventos/**").hasRole("ADMINISTRADOR_PAIS")
                 .requestMatchers("/api/reportes/**").hasRole("ADMINISTRADOR_PAIS")
+                .requestMatchers("/api/dispositivos/**").authenticated()
+                .requestMatchers("/api/asignaciones/**").hasRole("ADMINISTRADOR_PAIS")
+                .requestMatchers("/api/consulta/**").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

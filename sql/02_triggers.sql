@@ -1,12 +1,7 @@
--- =====================================================================
---  FASE 4 - TRIGGERS (PL/pgSQL)
---  Reglas de negocio que NO pueden expresarse solo con constraints.
---  Requiere 01_ddl.sql ejecutado previamente.
--- =====================================================================
+-- Triggers del sistema de ticketing
+-- Requiere 01_ddl.sql ejecutado antes
 
--- ---------------------------------------------------------------------
--- (A) VENTA: resolver la comision vigente y tomar snapshot de la tasa
--- ---------------------------------------------------------------------
+-- comision: antes de insertar una venta busco la tasa vigente y la guardo
 CREATE OR REPLACE FUNCTION fn_venta_before_insert()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -35,9 +30,7 @@ CREATE TRIGGER trg_venta_before_insert
     BEFORE INSERT ON venta
     FOR EACH ROW EXECUTE FUNCTION fn_venta_before_insert();
 
--- ---------------------------------------------------------------------
--- (B) ENTRADA: defaults + MAX 5 por compra + control de aforo
--- ---------------------------------------------------------------------
+-- entrada: maximo 5 por compra, control de aforo y precio desde el sector
 CREATE OR REPLACE FUNCTION fn_entrada_before_insert()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -92,10 +85,7 @@ CREATE TRIGGER trg_entrada_before_insert
     BEFORE INSERT ON entrada
     FOR EACH ROW EXECUTE FUNCTION fn_entrada_before_insert();
 
--- ---------------------------------------------------------------------
--- (C) COMISION: recalculo automatico de montos de la venta
---     Se dispara ante cualquier cambio en las entradas de la venta.
--- ---------------------------------------------------------------------
+-- recalculo el total de la venta cada vez que se agrega/modifica una entrada
 CREATE OR REPLACE FUNCTION fn_recalcular_venta()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -124,10 +114,7 @@ CREATE TRIGGER trg_recalc_venta
     AFTER INSERT OR UPDATE OR DELETE ON entrada
     FOR EACH ROW EXECUTE FUNCTION fn_recalcular_venta();
 
--- ---------------------------------------------------------------------
--- (D) EVENTO: evitar superposicion en un mismo estadio
---     (refuerza la constraint EXCLUDE con un mensaje de negocio claro)
--- ---------------------------------------------------------------------
+-- evento: no puede haber dos partidos solapados en el mismo estadio
 CREATE OR REPLACE FUNCTION fn_evento_no_superpuesto()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -169,10 +156,7 @@ CREATE TRIGGER trg_evento_cancelar
     BEFORE UPDATE OF estado ON evento
     FOR EACH ROW EXECUTE FUNCTION fn_evento_cancelar();
 
--- ---------------------------------------------------------------------
--- (E) TRANSFERENCIA: maximo 3 por entrada + control de titularidad
---     + auditoria. La transferencia se materializa al ACEPTARSE.
--- ---------------------------------------------------------------------
+-- transferencia: valida titular, maximo 3, y audita cada cambio de estado
 CREATE OR REPLACE FUNCTION fn_transferencia_before()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -258,9 +242,7 @@ CREATE TRIGGER trg_auditar_transferencia
     AFTER INSERT OR UPDATE ON transferencia
     FOR EACH ROW EXECUTE FUNCTION fn_auditar_transferencia();
 
--- ---------------------------------------------------------------------
--- (F) VALIDACION: chequeos de seguridad y consumo irreversible
--- ---------------------------------------------------------------------
+-- validacion: verifica token, dispositivo y asignacion del funcionario
 CREATE OR REPLACE FUNCTION fn_validacion_before()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -344,10 +326,7 @@ CREATE TRIGGER trg_validacion_after
     AFTER INSERT ON validacion
     FOR EACH ROW EXECUTE FUNCTION fn_validacion_after();
 
--- ---------------------------------------------------------------------
--- (G) TOKEN_QR: garantizar un unico token activo por entrada
---     (complementa al indice unico parcial uq_token_activo)
--- ---------------------------------------------------------------------
+-- token QR: solo puede haber uno activo por entrada a la vez
 CREATE OR REPLACE FUNCTION fn_token_unico_activo()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -363,6 +342,3 @@ CREATE TRIGGER trg_token_unico_activo
     BEFORE INSERT ON token_qr
     FOR EACH ROW EXECUTE FUNCTION fn_token_unico_activo();
 
--- =====================================================================
--- FIN TRIGGERS
--- =====================================================================

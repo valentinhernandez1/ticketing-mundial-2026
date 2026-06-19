@@ -4,5 +4,5 @@ import jakarta.validation.constraints.NotNull;
 
 public record TransferenciaRequest(
         @NotNull Long idEntrada,
-        @NotNull Long idDestino
+        @NotNull String emailDestino
 ) {}

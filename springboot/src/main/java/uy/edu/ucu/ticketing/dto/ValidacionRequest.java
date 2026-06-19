@@ -2,9 +2,8 @@ package uy.edu.ucu.ticketing.dto;
 
 import jakarta.validation.constraints.NotNull;
 
-/** El funcionario que valida sale del token (no del body). */
+// el QR codifica "{idEntrada}:{codigoToken}" — el backend lo parsea
 public record ValidacionRequest(
-        @NotNull Long idEntrada,
-        @NotNull Long idToken,
+        @NotNull String codigoQr,
         @NotNull Long idDispositivo
 ) {}

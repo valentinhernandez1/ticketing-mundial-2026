@@ -4,7 +4,6 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** DTOs de administracion de infraestructura y eventos (rol ADMINISTRADOR_PAIS). */
 public class AdminDtos {
 
     public record EstadioRequest(
@@ -25,7 +24,7 @@ public class AdminDtos {
             @NotNull Long idSeleccionLocal,
             @NotNull Long idSeleccionVisitante,
             @NotNull OffsetDateTime fechaHoraInicio,
-            @Positive Integer duracionMinutos         // opcional; por defecto 120. El admin sale del token.
+            @Positive Integer duracionMinutos   // si no viene, default 120
     ) {}
 
     public record HabilitarSectorRequest(

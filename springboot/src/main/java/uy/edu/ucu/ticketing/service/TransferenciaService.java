@@ -1,37 +1,70 @@
 package uy.edu.ucu.ticketing.service;
 
-import jakarta.persistence.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import uy.edu.ucu.ticketing.dto.TransferenciaRequest;
+import uy.edu.ucu.ticketing.repository.AuthRepository;
+import uy.edu.ucu.ticketing.repository.TransferenciaRepository;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class TransferenciaService {
 
-    @PersistenceContext
-    private EntityManager em;
+    private final TransferenciaRepository transferenciaRepo;
+    private final AuthRepository authRepo;
+
+    public TransferenciaService(TransferenciaRepository transferenciaRepo, AuthRepository authRepo) {
+        this.transferenciaRepo = transferenciaRepo;
+        this.authRepo = authRepo;
+    }
 
     @Transactional
     public Long iniciar(Long idSolicitante, TransferenciaRequest req) {
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("sp_transferir_entrada");
-        sp.registerStoredProcedureParameter("p_id_entrada", Long.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_id_destino", Long.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_id_solicitante", Long.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_id_transferencia", Long.class, ParameterMode.OUT);
-        sp.setParameter("p_id_entrada", req.idEntrada());
-        sp.setParameter("p_id_destino", req.idDestino());
-        sp.setParameter("p_id_solicitante", idSolicitante);
-        sp.execute();
-        return (Long) sp.getOutputParameterValue("p_id_transferencia");
+        Map<String, Object> entrada = transferenciaRepo.findEntrada(req.idEntrada())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entrada no encontrada"));
+
+        Long titular = ((Number) entrada.get("id_usuario_actual")).longValue();
+        if (!titular.equals(idSolicitante))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el titular puede transferir la entrada");
+
+        String estado = (String) entrada.get("estado");
+        if ("CONSUMIDA".equals(estado))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede transferir una entrada ya consumida");
+
+        int transferencias = ((Number) entrada.get("cantidad_transferencias")).intValue();
+        if (transferencias >= 3)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Esta entrada ya alcanzó el máximo de 3 transferencias");
+
+        if (transferenciaRepo.tienePendiente(req.idEntrada()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya hay una transferencia pendiente para esta entrada");
+
+        // busco al destinatario por email
+        Map<String, Object> destino = authRepo.findByEmail(req.emailDestino())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No existe un usuario con el email: " + req.emailDestino()));
+        Long idDestino = ((Number) destino.get("id_usuario")).longValue();
+
+        if (idDestino.equals(idSolicitante))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No podés transferirte la entrada a vos mismo");
+
+        return transferenciaRepo.insertarTransferencia(req.idEntrada(), idSolicitante, idDestino);
     }
 
     @Transactional
     public void aceptar(Long idTransferencia, Long idSolicitante) {
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("sp_aceptar_transferencia");
-        sp.registerStoredProcedureParameter("p_id_transferencia", Long.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_id_solicitante", Long.class, ParameterMode.IN);
-        sp.setParameter("p_id_transferencia", idTransferencia);
-        sp.setParameter("p_id_solicitante", idSolicitante);
-        sp.execute();
+        transferenciaRepo.aceptarTransferencia(idTransferencia, idSolicitante);
+    }
+
+    @Transactional
+    public void rechazar(Long idTransferencia, Long idSolicitante) {
+        transferenciaRepo.rechazarTransferencia(idTransferencia, idSolicitante);
+    }
+
+    public List<Map<String, Object>> transferenciasUsuario(Long idUsuario) {
+        return transferenciaRepo.transferenciasDeUsuario(idUsuario);
     }
 }

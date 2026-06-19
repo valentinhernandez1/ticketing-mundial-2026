@@ -1,7 +1,5 @@
--- =====================================================================
---  DATOS DE PRUEBA (seed) - opcional, para validar el modelo
---  Ejecutar despues de 01..03.
--- =====================================================================
+-- datos de prueba para poder probar el sistema
+-- ejecutar despues de los scripts 01, 02 y 03
 INSERT INTO pais(codigo_iso,nombre) VALUES
  ('USA','Estados Unidos'),('CAN','Canada'),('MEX','Mexico'),('URY','Uruguay');
 INSERT INTO pais_sede(id_pais) SELECT id_pais FROM pais WHERE codigo_iso IN ('USA','CAN','MEX');

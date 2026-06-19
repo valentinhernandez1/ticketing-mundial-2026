@@ -21,7 +21,15 @@ public class CompraController {
     public ResponseEntity<Map<String,Object>> comprar(@AuthenticationPrincipal Long uid,
                                                       @Valid @RequestBody CompraRequest req) {
         Long idVenta = service.registrarCompra(uid, req);
-        return ResponseEntity.ok(Map.of("idVenta", idVenta, "estado", "CONFIRMADA"));
+        return ResponseEntity.ok(Map.of("idVenta", idVenta, "estado", "PENDIENTE"));
+    }
+
+    @PostMapping("/{id}/confirmar")
+    @PreAuthorize("hasRole('USUARIO_GENERAL')")
+    public ResponseEntity<Map<String,Object>> confirmar(@AuthenticationPrincipal Long uid,
+                                                        @PathVariable Long id) {
+        service.confirmar(id, uid);
+        return ResponseEntity.ok(Map.of("idVenta", id, "estado", "CONFIRMADA"));
     }
 
     @PostMapping("/{id}/pagar")

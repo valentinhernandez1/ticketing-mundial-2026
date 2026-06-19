@@ -1,14 +1,10 @@
--- =====================================================================
---  FASE 5 - PROCEDIMIENTOS ALMACENADOS Y FUNCIONES DE REPORTE
---  Requiere 01_ddl.sql y 02_triggers.sql.
--- =====================================================================
+﻿-- Stored procedures y funciones de reporte
+-- Requiere 01_ddl.sql y 02_triggers.sql ejecutados antes
 
--- ---------------------------------------------------------------------
--- 1) REGISTRAR COMPRA
+-- REGISTRAR COMPRA
 --    Crea la venta y emite N entradas (1..5) para los evento_sector dados.
 --    Los triggers aplican: max 5, aforo, calculo de comision y titularidad.
 --    p_evento_sectores: arreglo de id_evento_sector (uno por entrada).
--- ---------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_registrar_compra(
     IN  p_id_usuario        BIGINT,
     IN  p_evento_sectores   BIGINT[],
@@ -43,9 +39,7 @@ BEGIN
 END;
 $$;
 
--- ---------------------------------------------------------------------
--- 2) TRANSFERIR ENTRADA (inicia transferencia PENDIENTE)
--- ---------------------------------------------------------------------
+-- TRANSFERIR ENTRADA (inicia transferencia PENDIENTE)
 CREATE OR REPLACE PROCEDURE sp_transferir_entrada(
     IN  p_id_entrada     BIGINT,
     IN  p_id_destino     BIGINT,
@@ -75,7 +69,7 @@ BEGIN
 END;
 $$;
 
--- 2b) ACEPTAR TRANSFERENCIA (solo el destinatario; el trigger cambia el titular)
+-- ACEPTAR TRANSFERENCIA (solo el destinatario; el trigger cambia el titular)
 CREATE OR REPLACE PROCEDURE sp_aceptar_transferencia(
     IN p_id_transferencia BIGINT,
     IN p_id_solicitante   BIGINT      -- usuario autenticado (debe ser el destino)
@@ -103,8 +97,7 @@ BEGIN
 END;
 $$;
 
--- ---------------------------------------------------------------------
--- 3) VALIDAR ACCESO (registra ingreso; los triggers consumen la entrada)
+-- VALIDAR ACCESO (registra ingreso; los triggers consumen la entrada)
 --
 --    Flujo ACEPTADO: INSERT con resultado='ACEPTADO' → trigger valida todo
 --                   → trigger AFTER marca entrada CONSUMIDA.
@@ -112,7 +105,6 @@ $$;
 --                   y hace INSERT con resultado='RECHAZADO' (el trigger BEFORE
 --                   detecta resultado='RECHAZADO' y salta todas las validaciones).
 --    Todos los intentos quedan en validacion para auditoria completa.
--- ---------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_validar_acceso(
     IN  p_id_entrada     BIGINT,
     IN  p_id_token       BIGINT,
@@ -155,11 +147,8 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
--- ---------------------------------------------------------------------
--- 4) GENERAR REPORTES (funciones que devuelven tablas)
--- ---------------------------------------------------------------------
-
--- 4a) Ranking de compradores (por cantidad de entradas y monto gastado)
+-- GENERAR REPORTES (funciones que devuelven tablas)
+-- Ranking de compradores (por cantidad de entradas y monto gastado)
 CREATE OR REPLACE FUNCTION fn_reporte_ranking_compradores(p_top INT DEFAULT 10)
 RETURNS TABLE (
     id_usuario     BIGINT,
@@ -181,7 +170,7 @@ RETURNS TABLE (
      LIMIT p_top;
 $$;
 
--- 4b) Eventos con mas ventas
+-- Eventos con mas ventas
 CREATE OR REPLACE FUNCTION fn_reporte_eventos_top(p_top INT DEFAULT 10)
 RETURNS TABLE (
     id_evento      BIGINT,
@@ -208,7 +197,7 @@ RETURNS TABLE (
      LIMIT p_top;
 $$;
 
--- 4c) Estadisticas por estadio
+-- Estadisticas por estadio
 CREATE OR REPLACE FUNCTION fn_reporte_estadisticas_estadio()
 RETURNS TABLE (
     id_estadio        BIGINT,
@@ -249,11 +238,9 @@ RETURNS TABLE (
      ORDER BY 6 DESC;
 $$;
 
--- ---------------------------------------------------------------------
--- 5) REGISTRO DE USUARIO GENERAL
+-- REGISTRO DE USUARIO GENERAL
 --    Alta atomica de un consumidor: direccion + usuario + documento +
 --    subtipo usuario_general. La app pasa el hash bcrypt ya calculado.
--- ---------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_registrar_usuario_general(
     IN  p_email          VARCHAR,   -- la columna usuario.email (citext) castea solo
     IN  p_password_hash  VARCHAR,
@@ -289,18 +276,15 @@ BEGIN
 END;
 $$;
 
--- ---------------------------------------------------------------------
--- 6) ADMINISTRACION DE INFRAESTRUCTURA Y EVENTOS (rol ADMINISTRADOR_PAIS)
+-- ADMINISTRACION DE INFRAESTRUCTURA Y EVENTOS (rol ADMINISTRADOR_PAIS)
 --    El administrador solo puede gestionar su jurisdiccion (su pais sede).
--- ---------------------------------------------------------------------
-
 -- Helper: pais sede asignado al administrador (NULL si no es administrador)
 CREATE OR REPLACE FUNCTION fn_pais_admin(p_id_admin BIGINT)
 RETURNS INT LANGUAGE sql STABLE AS $$
     SELECT id_pais FROM administrador_pais WHERE id_usuario = p_id_admin;
 $$;
 
--- 6a) Alta de estadio en la jurisdiccion (pais sede) del administrador
+-- Alta de estadio en la jurisdiccion (pais sede) del administrador
 CREATE OR REPLACE PROCEDURE sp_crear_estadio(
     IN  p_id_administrador BIGINT,
     IN  p_nombre    VARCHAR,
@@ -323,7 +307,7 @@ BEGIN
 END;
 $$;
 
--- 6b) Alta de sector dentro de un estadio (A/B/C/D, capacidad, precio base)
+-- Alta de sector dentro de un estadio (A/B/C/D, capacidad, precio base)
 CREATE OR REPLACE PROCEDURE sp_agregar_sector(
     IN  p_id_administrador BIGINT,
     IN  p_id_estadio   BIGINT,
@@ -349,7 +333,7 @@ BEGIN
 END;
 $$;
 
--- 6c) Programar un evento. Los triggers calculan el periodo y bloquean solapes.
+-- Programar un evento. Los triggers calculan el periodo y bloquean solapes.
 CREATE OR REPLACE PROCEDURE sp_crear_evento(
     IN  p_id_administrador  BIGINT,
     IN  p_id_estadio       BIGINT,
@@ -378,7 +362,7 @@ BEGIN
 END;
 $$;
 
--- 6d) Habilitar un sector para un evento (cupo y precio para ese partido)
+-- Habilitar un sector para un evento (cupo y precio para ese partido)
 CREATE OR REPLACE PROCEDURE sp_habilitar_sector(
     IN  p_id_administrador BIGINT,
     IN  p_id_evento       BIGINT,
@@ -415,7 +399,7 @@ BEGIN
 END;
 $$;
 
--- 6e) Cancelar un evento (libera la franja del estadio via trigger)
+-- Cancelar un evento (libera la franja del estadio via trigger)
 CREATE OR REPLACE PROCEDURE sp_cancelar_evento(
     IN p_id_administrador BIGINT,
     IN p_id_evento        BIGINT
@@ -437,9 +421,7 @@ BEGIN
 END;
 $$;
 
--- ---------------------------------------------------------------------
--- 7) PAGO DE LA VENTA (estado CONFIRMADA -> PAGA). Solo el dueno de la venta.
--- ---------------------------------------------------------------------
+-- PAGO DE LA VENTA (estado CONFIRMADA -> PAGA). Solo el dueno de la venta.
 CREATE OR REPLACE PROCEDURE sp_marcar_venta_paga(
     IN p_id_venta   BIGINT,
     IN p_id_usuario BIGINT
@@ -463,11 +445,9 @@ BEGIN
 END;
 $$;
 
--- ---------------------------------------------------------------------
--- 7b) GENERAR TOKEN QR DINAMICO (rota cada ~30s desde el cliente).
+-- GENERAR TOKEN QR DINAMICO (rota cada ~30s desde el cliente).
 --     Solo el titular de la entrada. El trigger desactiva el token previo,
 --     garantizando un unico token activo por entrada.
--- ---------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_generar_token(
     IN  p_id_entrada BIGINT,
     IN  p_id_usuario BIGINT,
@@ -498,9 +478,7 @@ BEGIN
 END;
 $$;
 
--- ---------------------------------------------------------------------
--- 8) LISTAR LAS COMPRAS (VENTAS) DE UN USUARIO
--- ---------------------------------------------------------------------
+-- LISTAR LAS COMPRAS (VENTAS) DE UN USUARIO
 CREATE OR REPLACE FUNCTION fn_compras_usuario(p_id_usuario BIGINT)
 RETURNS TABLE (
     id_venta     BIGINT,
@@ -521,6 +499,3 @@ RETURNS TABLE (
      ORDER BY v.fecha DESC;
 $$;
 
--- =====================================================================
--- FIN PROCEDIMIENTOS
--- =====================================================================

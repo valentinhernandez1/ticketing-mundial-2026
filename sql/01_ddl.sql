@@ -1,16 +1,6 @@
--- =====================================================================
---  SISTEMA DE TICKETING - MUNDIAL 2026
---  FASE 3 - MODELO FISICO POSTGRESQL - DDL (estructura)
---  Bases de Datos II - UCU
---
---  Convenciones:
---    * snake_case en minusculas
---    * Claves subrogadas BIGSERIAL/SERIAL (id_*)
---    * Claves naturales protegidas con UNIQUE
---    * Integridad referencial explicita con nombres de constraint
---    * Dominios y CHECK para estados y valores acotados
---  Orden de ejecucion: 01_ddl -> 02_triggers -> 03_procedures -> 04_queries
--- =====================================================================
+-- Ticketing Mundial 2026 - BDII UCU
+-- Script de creacion de tablas
+-- Ejecutar en orden: 01_ddl -> 02_triggers -> 03_procedures -> 04_queries
 
 -- Recomendado para comparacion de mails case-insensitive
 CREATE EXTENSION IF NOT EXISTS citext;
@@ -38,9 +28,7 @@ DROP DOMAIN IF EXISTS dom_resultado_val CASCADE;
 CREATE DOMAIN dom_resultado_val AS VARCHAR(10)
     CHECK (VALUE IN ('ACEPTADO','RECHAZADO'));
 
--- =====================================================================
--- 1. CATALOGOS GEOGRAFICOS
--- =====================================================================
+-- paises y sedes del mundial
 
 CREATE TABLE pais (
     id_pais     SERIAL       NOT NULL,
@@ -60,9 +48,7 @@ CREATE TABLE pais_sede (
         REFERENCES pais (id_pais) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- =====================================================================
--- 2. MODULO DE USUARIOS
--- =====================================================================
+-- usuarios y sus subtipos (admin, funcionario, usuario general)
 
 CREATE TABLE direccion (
     id_direccion  BIGSERIAL    NOT NULL,
@@ -167,9 +153,7 @@ CREATE TABLE dispositivo (
     CONSTRAINT ck_dispositivo_estado CHECK (estado IN ('ACTIVO','INACTIVO','BLOQUEADO'))
 );
 
--- =====================================================================
--- 3. INFRAESTRUCTURA Y EVENTOS
--- =====================================================================
+-- estadios, sectores y eventos
 
 CREATE TABLE estadio (
     id_estadio BIGSERIAL    NOT NULL,
@@ -269,9 +253,7 @@ CREATE TABLE evento_sector (
     CONSTRAINT ck_es_precio      CHECK (precio >= 0)
 );
 
--- =====================================================================
--- 4. VENTA, COMISION Y ENTRADAS
--- =====================================================================
+-- ventas, entradas y transferencias
 
 -- Tasa de comision con vigencia historica (la tasa puede variar en el tiempo)
 CREATE TABLE comision (
@@ -416,9 +398,7 @@ CREATE TABLE auditoria_transferencia (
     CONSTRAINT pk_auditoria_transf PRIMARY KEY (id_auditoria)
 );
 
--- =====================================================================
--- 5. INDICES (Fase 3 - performance)
--- =====================================================================
+-- indices para mejorar performance en las consultas mas frecuentes
 CREATE INDEX idx_documento_usuario   ON documento (id_usuario);
 CREATE INDEX idx_telefono_usuario    ON telefono (id_usuario);
 CREATE INDEX idx_dispositivo_func    ON dispositivo (id_funcionario);
@@ -451,6 +431,3 @@ CREATE UNIQUE INDEX uq_token_activo
 CREATE UNIQUE INDEX uq_validacion_aceptada
     ON validacion (id_entrada) WHERE (resultado = 'ACEPTADO');
 
--- =====================================================================
--- FIN DDL
--- =====================================================================
