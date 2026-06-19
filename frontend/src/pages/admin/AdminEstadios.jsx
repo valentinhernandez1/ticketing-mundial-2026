@@ -39,7 +39,7 @@ export default function AdminEstadios() {
       const r = await api.get('/consulta/catalogos')
       setCatalogos(r.data)
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al crear estadio')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al crear estadio')
     } finally {
       setCreandoEstadio(false)
     }
@@ -57,7 +57,7 @@ export default function AdminEstadios() {
       setSuccess('Sector agregado exitosamente')
       setSectorForm({ idEstadio: '', nombreSector: 'A', capacidad: '', precio: '' })
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al crear sector')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al crear sector')
     } finally {
       setCreandoSector(false)
     }
@@ -121,7 +121,7 @@ export default function AdminEstadios() {
                 required
               >
                 <option value="">Seleccioná un país...</option>
-                {(catalogos.paises || []).map(p => (
+                {(catalogos.paisesSede || []).map(p => (
                   <option key={p.id ?? p.idPais} value={p.id ?? p.idPais}>{p.nombre}</option>
                 ))}
               </select>

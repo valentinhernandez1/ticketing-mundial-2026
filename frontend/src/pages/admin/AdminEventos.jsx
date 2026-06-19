@@ -10,7 +10,7 @@ export default function AdminEventos() {
   const [success, setSuccess] = useState('')
 
   const [eventoForm, setEventoForm] = useState({
-    idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '90'
+    idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '120'
   })
   const [sectorForm, setSectorForm] = useState({
     idEvento: '', nombreSector: 'A', cupo: '', precio: ''
@@ -48,10 +48,10 @@ export default function AdminEventos() {
         duracionMinutos: parseInt(eventoForm.duracion),
       })
       setSuccess('Evento creado exitosamente')
-      setEventoForm({ idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '90' })
+      setEventoForm({ idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '120' })
       cargar()
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al crear evento')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al crear evento')
     } finally {
       setCreandoEvento(false)
     }
@@ -69,7 +69,7 @@ export default function AdminEventos() {
       setSuccess('Sector habilitado para el evento')
       setSectorForm({ idEvento: '', nombreSector: 'A', cupo: '', precio: '' })
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al habilitar sector')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al habilitar sector')
     } finally {
       setCreandoSector(false)
     }
@@ -83,7 +83,7 @@ export default function AdminEventos() {
       setSuccess('Evento cancelado')
       cargar()
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al cancelar')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al cancelar')
     } finally {
       setCancelando(null)
     }

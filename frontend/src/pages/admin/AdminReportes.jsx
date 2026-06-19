@@ -63,15 +63,15 @@ export default function AdminReportes() {
     </div>
   )
 
-  const maxCompras = compradores[0]?.totalCompras ?? compradores[0]?.[1] ?? 1
-  const maxRecaudacion = eventosTop[0]?.recaudacion ?? eventosTop[0]?.[2] ?? 1
-  const maxOcupacion = estadisticas[0]?.ocupacion ?? estadisticas[0]?.[2] ?? 1
-
-  const getVal = (row, keys, idx) => {
-    if (Array.isArray(row)) return row[idx]
-    for (const k of keys) if (row[k] !== undefined) return row[k]
+  // Field names come from the SQL functions (snake_case, passed through as-is by JdbcTemplate)
+  const getVal = (row, keys) => {
+    if (!row) return null
+    for (const k of keys) if (row[k] !== undefined && row[k] !== null) return row[k]
     return null
   }
+
+  const maxCompras = getVal(compradores[0], ['cant_entradas', 'totalCompras', 'cantidad']) ?? 1
+  const maxRecaudacion = getVal(eventosTop[0], ['recaudacion', 'total']) ?? 1
 
   return (
     <div className="flex flex-col gap-6">
@@ -99,9 +99,9 @@ export default function AdminReportes() {
         ) : (
           <div className="flex flex-col gap-3">
             {compradores.map((row, i) => {
-              const nombre = getVal(row, ['nombre', 'nombreUsuario', 'email'], 0)
-              const total = getVal(row, ['totalCompras', 'compras', 'cantidad'], 1)
-              const monto = getVal(row, ['totalGastado', 'monto', 'gastado'], 2)
+              const nombre = getVal(row, ['nombre', 'email', 'nombreUsuario'])
+              const total = getVal(row, ['cant_entradas', 'totalCompras', 'cantidad'])
+              const monto = getVal(row, ['monto_total', 'totalGastado', 'monto'])
               return (
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-lg w-6 text-center">{MEDALS[i] || `${i + 1}.`}</span>
@@ -129,9 +129,9 @@ export default function AdminReportes() {
         ) : (
           <div className="flex flex-col gap-3">
             {eventosTop.map((row, i) => {
-              const partido = getVal(row, ['partido', 'nombre', 'evento'], 0)
-              const entradas = getVal(row, ['entradasVendidas', 'entradas', 'cantidad'], 1)
-              const recaudacion = getVal(row, ['recaudacion', 'total', 'monto'], 2)
+              const partido = getVal(row, ['partido', 'nombre', 'evento'])
+              const entradas = getVal(row, ['entradas_vendidas', 'entradasVendidas', 'entradas'])
+              const recaudacion = getVal(row, ['recaudacion', 'total', 'monto'])
               return (
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-lg w-6 text-center">{MEDALS[i] || `${i + 1}.`}</span>
@@ -170,10 +170,10 @@ export default function AdminReportes() {
               </thead>
               <tbody>
                 {estadisticas.map((row, i) => {
-                  const estadio = getVal(row, ['estadio', 'nombre'], 0)
-                  const eventos = getVal(row, ['eventos', 'cantEventos'], 1)
-                  const entradas = getVal(row, ['entradas', 'cantEntradas'], 2)
-                  const recaudacion = getVal(row, ['recaudacion', 'total'], 3)
+                  const estadio = getVal(row, ['estadio', 'nombre'])
+                  const eventos = getVal(row, ['eventos', 'cantEventos'])
+                  const entradas = getVal(row, ['entradas_vendidas', 'entradas', 'cantEntradas'])
+                  const recaudacion = getVal(row, ['recaudacion', 'total'])
                   return (
                     <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
                       <td className="py-3 pr-4 text-zinc-600 font-mono text-xs">{i + 1}</td>
