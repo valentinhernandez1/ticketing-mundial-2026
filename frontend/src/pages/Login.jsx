@@ -21,7 +21,7 @@ export default function Login() {
       else if (data.rol === 'FUNCIONARIO_VALIDACION') navigate('/validador')
       else navigate('/comprar')
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Credenciales incorrectas')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Credenciales incorrectas')
     } finally {
       setLoading(false)
     }
@@ -114,6 +114,15 @@ export default function Login() {
               Crear cuenta
             </Link>
           </p>
+
+          <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50 text-xs text-zinc-500">
+            <p className="font-semibold text-zinc-400 mb-2">Cuentas de demo (contraseña: test1234)</p>
+            <div className="space-y-1">
+              <p>👤 valentin@ucu.edu.uy — Usuario general</p>
+              <p>🔧 admin.mex@fifa.org — Administrador</p>
+              <p>🔍 func@fifa.org — Funcionario</p>
+            </div>
+          </div>
         </div>
 
         <p className="text-center text-xs text-zinc-700 mt-6">

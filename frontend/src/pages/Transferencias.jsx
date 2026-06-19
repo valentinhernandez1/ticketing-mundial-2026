@@ -66,7 +66,7 @@ export default function Transferencias() {
       setSuccess('Transferencia aceptada')
       cargar()
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al aceptar')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al aceptar')
     } finally {
       setAceptando(null)
     }
@@ -79,14 +79,16 @@ export default function Transferencias() {
       setSuccess('Transferencia rechazada')
       cargar()
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al rechazar')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al rechazar')
     } finally {
       setRechazando(null)
     }
   }
 
-  const recibidas = transferencias.filter(t => t.idDestinatario === user.id && t.estado === 'PENDIENTE')
-  const historial = transferencias.filter(t => !(t.idDestinatario === user.id && t.estado === 'PENDIENTE'))
+  // el backend retorna idDestino (camelCase) — fallback a snake_case por si acaso
+  const esDestinatario = (t) => (t.idDestino ?? t.id_usuario_destino) === user.id
+  const recibidas = transferencias.filter(t => esDestinatario(t) && t.estado === 'PENDIENTE')
+  const historial = transferencias.filter(t => !(esDestinatario(t) && t.estado === 'PENDIENTE'))
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -141,13 +143,13 @@ export default function Transferencias() {
             )}
           </div>
           <div>
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">ID del destinatario</label>
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">Email del destinatario</label>
             <input
-              type="number"
+              type="email"
               className="input-field"
-              value={form.idDestinatario}
-              onChange={e => setForm(f => ({ ...f, idDestinatario: e.target.value }))}
-              placeholder="ID del usuario destinatario"
+              value={form.emailDestino}
+              onChange={e => setForm(f => ({ ...f, emailDestino: e.target.value }))}
+              placeholder="ejemplo@ucu.edu.uy"
               required
             />
           </div>
@@ -175,7 +177,7 @@ export default function Transferencias() {
               <div key={t.idTransferencia} className="bg-zinc-900 border border-yellow-800/30 rounded-xl p-4 flex items-center gap-4">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white">
-                    Entrada #{t.idEntrada} de usuario #{t.idRemitente ?? t.idEmisor}
+                    Entrada #{t.idEntrada} de usuario #{t.idOrigen ?? t.id_usuario_origen}
                   </p>
                   <p className="text-xs text-zinc-500 mt-0.5">
                     {t.fecha ? new Date(t.fecha).toLocaleString('es-UY') : '—'}
@@ -233,7 +235,7 @@ export default function Transferencias() {
               </thead>
               <tbody>
                 {historial.map((t, i) => {
-                  const esEnviada = t.idRemitente === user.id || t.idEmisor === user.id
+                  const esEnviada = (t.idOrigen ?? t.id_usuario_origen) === user.id
                   return (
                     <tr key={t.idTransferencia ?? i} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
                       <td className="px-4 py-3 font-mono text-zinc-500 text-xs">#{t.idTransferencia}</td>

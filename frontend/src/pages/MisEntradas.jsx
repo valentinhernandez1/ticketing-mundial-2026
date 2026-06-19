@@ -165,7 +165,7 @@ export default function MisEntradas() {
           const sector = entrada.nombreSector || entrada.sector || 'D'
           const borderColor = SECTOR_BORDER[sector] || SECTOR_BORDER.D
           const estado = entrada.estado || 'EMITIDA'
-          const canQr = estado !== 'CONSUMIDA' && estado !== 'TRANSFERIDA'
+          const canQr = estado === 'EMITIDA'
 
           return (
             <div

@@ -3,6 +3,13 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { UserPlus, AlertCircle, ChevronLeft } from 'lucide-react'
 
+const PAISES = [
+  { id: 1, nombre: 'Estados Unidos' },
+  { id: 2, nombre: 'Canadá' },
+  { id: 3, nombre: 'México' },
+  { id: 4, nombre: 'Uruguay' },
+]
+
 export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -50,7 +57,7 @@ export default function Register() {
       await register(payload)
       navigate('/comprar')
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al registrarse')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al registrarse')
     } finally {
       setLoading(false)
     }
@@ -119,8 +126,10 @@ export default function Register() {
             <div className="pb-2 border-b border-zinc-800">
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Dirección</p>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="País (ID)">
-                  <input type="number" className="input-field" value={form.paisDireccion} onChange={e => set('paisDireccion', e.target.value)} required placeholder="4" />
+                <Field label="País">
+                  <select className="input-field" value={form.paisDireccion} onChange={e => set('paisDireccion', e.target.value)} required>
+                    {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
                 </Field>
                 <Field label="Localidad">
                   <input className="input-field" value={form.localidad} onChange={e => set('localidad', e.target.value)} required placeholder="Montevideo" />
@@ -143,8 +152,10 @@ export default function Register() {
             <div>
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Documento de identidad</p>
               <div className="grid grid-cols-3 gap-3">
-                <Field label="País (ID)">
-                  <input type="number" className="input-field" value={form.paisDocumento} onChange={e => set('paisDocumento', e.target.value)} required placeholder="4" />
+                <Field label="País">
+                  <select className="input-field" value={form.paisDocumento} onChange={e => set('paisDocumento', e.target.value)} required>
+                    {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
                 </Field>
                 <Field label="Tipo">
                   <select className="input-field" value={form.tipoDocumento} onChange={e => set('tipoDocumento', e.target.value)}>
