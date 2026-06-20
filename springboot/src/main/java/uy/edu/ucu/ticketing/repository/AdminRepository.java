@@ -52,7 +52,7 @@ public class AdminRepository {
                   AND id_evento <> ?
                   AND tstzrange(fecha_hora_inicio,
                                 fecha_hora_inicio + (duracion_minutos * INTERVAL '1 minute'))
-                   && tstzrange(?, ? + (? * INTERVAL '1 minute'))
+                   && tstzrange(?::timestamptz, ?::timestamptz + (?::int * INTERVAL '1 minute'))
                 """;
         Integer count = jdbc.queryForObject(sql, Integer.class,
                 idEstadio, excluirIdEvento == null ? -1L : excluirIdEvento,

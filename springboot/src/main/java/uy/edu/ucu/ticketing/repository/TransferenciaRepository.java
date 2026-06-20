@@ -70,10 +70,11 @@ public class TransferenciaRepository {
                 WHERE id_transferencia = ?
                 """, idTransferencia);
 
+        // el trigger fn_transferencia_aceptar ya incrementa cantidad_transferencias
+        // nosotros solo cambiamos el titular y el estado
         jdbc.update("""
                 UPDATE entrada
-                SET id_usuario_actual = ?, estado = 'EMITIDA',
-                    cantidad_transferencias = cantidad_transferencias + 1
+                SET id_usuario_actual = ?, estado = 'EMITIDA'
                 WHERE id_entrada = ?
                 """, idDestino, idEntrada);
     }
