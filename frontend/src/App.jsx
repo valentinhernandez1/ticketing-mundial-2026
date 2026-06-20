@@ -1,4 +1,9 @@
 import { Routes, Route, Navigate, Outlet, NavLink } from 'react-router-dom'
+import {
+  ShoppingBag, Ticket, Receipt, ArrowLeftRight,
+  Building2, Calendar, Smartphone, UserCheck, BarChart3,
+  ScanLine,
+} from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -19,20 +24,20 @@ function Layout() {
 
   const navByRole = {
     USUARIO_GENERAL: [
-      { path: '/comprar', label: 'Comprar entradas' },
-      { path: '/mis-entradas', label: 'Mis entradas' },
-      { path: '/mis-compras', label: 'Mis compras' },
-      { path: '/transferencias', label: 'Transferencias' },
+      { path: '/comprar', label: 'Comprar entradas', shortLabel: 'Comprar', icon: ShoppingBag },
+      { path: '/mis-entradas', label: 'Mis entradas', shortLabel: 'Entradas', icon: Ticket },
+      { path: '/mis-compras', label: 'Mis compras', shortLabel: 'Compras', icon: Receipt },
+      { path: '/transferencias', label: 'Transferencias', shortLabel: 'Transferir', icon: ArrowLeftRight },
     ],
     ADMINISTRADOR_PAIS: [
-      { path: '/admin/estadios', label: 'Estadios' },
-      { path: '/admin/eventos', label: 'Eventos' },
-      { path: '/admin/dispositivos', label: 'Dispositivos' },
-      { path: '/admin/asignaciones', label: 'Asignaciones' },
-      { path: '/admin/reportes', label: 'Reportes' },
+      { path: '/admin/estadios', label: 'Estadios', shortLabel: 'Estadios', icon: Building2 },
+      { path: '/admin/eventos', label: 'Eventos', shortLabel: 'Eventos', icon: Calendar },
+      { path: '/admin/dispositivos', label: 'Dispositivos', shortLabel: 'Dispositivos', icon: Smartphone },
+      { path: '/admin/asignaciones', label: 'Asignaciones', shortLabel: 'Asign.', icon: UserCheck },
+      { path: '/admin/reportes', label: 'Reportes', shortLabel: 'Reportes', icon: BarChart3 },
     ],
     FUNCIONARIO_VALIDACION: [
-      { path: '/validador', label: 'Validar acceso' },
+      { path: '/validador', label: 'Validar acceso', shortLabel: 'Validar', icon: ScanLine },
     ],
   }
 
@@ -49,7 +54,8 @@ function Layout() {
             <span className="text-white"> 2026</span>
           </span>
         </div>
-        <nav className="flex gap-1 flex-1">
+        {/* Nav links — solo visible en desktop */}
+        <nav className="hidden md:flex gap-1 flex-1">
           {nav.map(n => (
             <NavLink
               key={n.path}
@@ -57,7 +63,7 @@ function Layout() {
               className={({ isActive }) =>
                 `px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   isActive
-                    ? 'text-white bg-zinc-800 border border-zinc-700'
+                    ? 'bg-green-900/30 text-green-400 border border-green-800/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`
               }
@@ -66,6 +72,8 @@ function Layout() {
             </NavLink>
           ))}
         </nav>
+        {/* Spacer en mobile para empujar el avatar a la derecha */}
+        <div className="flex-1 md:hidden" />
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-sm font-bold text-white">
             {initial}
@@ -74,9 +82,28 @@ function Layout() {
           <button onClick={logout} className="btn-ghost text-xs">Salir</button>
         </div>
       </header>
-      <main className="pt-16 max-w-5xl mx-auto px-6 py-8">
+
+      <main className="pt-16 pb-20 md:pb-0 max-w-5xl mx-auto px-6 py-8">
         <Outlet />
       </main>
+
+      {/* Bottom nav — solo mobile */}
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-zinc-900 border-t border-zinc-800 flex md:hidden">
+        {nav.map(n => (
+          <NavLink
+            key={n.path}
+            to={n.path}
+            className={({ isActive }) =>
+              `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-xs font-medium transition-colors ${
+                isActive ? 'text-green-400' : 'text-zinc-500 hover:text-zinc-300'
+              }`
+            }
+          >
+            <n.icon size={20} strokeWidth={1.5} />
+            <span className="text-[10px] leading-tight text-center">{n.shortLabel || n.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   )
 }

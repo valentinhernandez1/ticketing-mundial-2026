@@ -1,32 +1,49 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { UserPlus, AlertCircle, ChevronLeft } from 'lucide-react'
+import { UserPlus, AlertCircle, ChevronLeft, Plus, X } from 'lucide-react'
+
+const PAISES = [
+  { id: 1, nombre: 'Estados Unidos' },
+  { id: 2, nombre: 'Canadá' },
+  { id: 3, nombre: 'México' },
+  { id: 4, nombre: 'Uruguay' },
+]
+
+const Field = ({ label, children }) => (
+  <div>
+    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">{label}</label>
+    {children}
+  </div>
+)
 
 export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [telefonos, setTelefonos] = useState([''])
 
   const [form, setForm] = useState({
     nombre: '',
     apellido: '',
     email: '',
     password: '',
-    // Dirección
-    paisDireccion: '4',
+    dirIdPais: '4',
     localidad: '',
     calle: '',
-    numeroDireccion: '',
+    numero: '',
     codigoPostal: '',
-    // Documento
-    paisDocumento: '4',
+    docIdPais: '4',
     tipoDocumento: 'CI',
-    numeroDocumento: '',
+    docNumero: '',
   })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const agregarTelefono = () => setTelefonos(t => [...t, ''])
+  const quitarTelefono = (i) => setTelefonos(t => t.filter((_, idx) => idx !== i))
+  const setTelefono = (i, v) => setTelefonos(t => t.map((tel, idx) => idx === i ? v : tel))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -38,30 +55,26 @@ export default function Register() {
         apellido: form.apellido,
         email: form.email,
         password: form.password,
-        idPaisDireccion: parseInt(form.paisDireccion),
+        dirIdPais: parseInt(form.dirIdPais),
         localidad: form.localidad,
         calle: form.calle,
-        numeroDireccion: parseInt(form.numeroDireccion),
+        numero: form.numero,
         codigoPostal: form.codigoPostal,
-        idPaisDocumento: parseInt(form.paisDocumento),
+        docIdPais: parseInt(form.docIdPais),
         tipoDocumento: form.tipoDocumento,
-        numeroDocumento: form.numeroDocumento,
+        docNumero: form.docNumero,
+        telefonos: telefonos
+          .filter(t => t.trim())
+          .map(t => ({ numero: t.trim(), tipo: 'MOVIL' })),
       }
       await register(payload)
       navigate('/comprar')
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al registrarse')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al registrarse')
     } finally {
       setLoading(false)
     }
   }
-
-  const Field = ({ label, children }) => (
-    <div>
-      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">{label}</label>
-      {children}
-    </div>
-  )
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 py-12 relative overflow-hidden">
@@ -94,8 +107,9 @@ export default function Register() {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
             {/* Datos personales */}
-            <div className="pb-2 border-b border-zinc-800">
+            <div className="pb-4 border-b border-zinc-800">
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Datos personales</p>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Nombre">
@@ -115,12 +129,42 @@ export default function Register() {
               </div>
             </div>
 
+            {/* Teléfonos */}
+            <div className="pb-4 border-b border-zinc-800">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Teléfonos de contacto</p>
+                <button type="button" onClick={agregarTelefono} className="text-xs text-green-400 hover:text-green-300 flex items-center gap-1 transition-colors">
+                  <Plus size={12} /> Agregar
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {telefonos.map((tel, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input
+                      type="tel"
+                      className="input-field flex-1"
+                      value={tel}
+                      onChange={e => setTelefono(i, e.target.value)}
+                      placeholder="+598 99 123 456"
+                    />
+                    {telefonos.length > 1 && (
+                      <button type="button" onClick={() => quitarTelefono(i)} className="text-zinc-600 hover:text-red-400 transition-colors px-1">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Dirección */}
-            <div className="pb-2 border-b border-zinc-800">
+            <div className="pb-4 border-b border-zinc-800">
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Dirección</p>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="País (ID)">
-                  <input type="number" className="input-field" value={form.paisDireccion} onChange={e => set('paisDireccion', e.target.value)} required placeholder="4" />
+                <Field label="País">
+                  <select className="input-field" value={form.dirIdPais} onChange={e => set('dirIdPais', e.target.value)} required>
+                    {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
                 </Field>
                 <Field label="Localidad">
                   <input className="input-field" value={form.localidad} onChange={e => set('localidad', e.target.value)} required placeholder="Montevideo" />
@@ -131,7 +175,7 @@ export default function Register() {
                   <input className="input-field" value={form.calle} onChange={e => set('calle', e.target.value)} required placeholder="18 de Julio" />
                 </Field>
                 <Field label="Número">
-                  <input type="number" className="input-field" value={form.numeroDireccion} onChange={e => set('numeroDireccion', e.target.value)} required placeholder="1234" />
+                  <input className="input-field" value={form.numero} onChange={e => set('numero', e.target.value)} required placeholder="1234" />
                 </Field>
                 <Field label="Cód. Postal">
                   <input className="input-field" value={form.codigoPostal} onChange={e => set('codigoPostal', e.target.value)} placeholder="11200" />
@@ -143,8 +187,10 @@ export default function Register() {
             <div>
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Documento de identidad</p>
               <div className="grid grid-cols-3 gap-3">
-                <Field label="País (ID)">
-                  <input type="number" className="input-field" value={form.paisDocumento} onChange={e => set('paisDocumento', e.target.value)} required placeholder="4" />
+                <Field label="País">
+                  <select className="input-field" value={form.docIdPais} onChange={e => set('docIdPais', e.target.value)} required>
+                    {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
                 </Field>
                 <Field label="Tipo">
                   <select className="input-field" value={form.tipoDocumento} onChange={e => set('tipoDocumento', e.target.value)}>
@@ -154,7 +200,7 @@ export default function Register() {
                   </select>
                 </Field>
                 <Field label="Número">
-                  <input className="input-field" value={form.numeroDocumento} onChange={e => set('numeroDocumento', e.target.value)} required placeholder="12345678" />
+                  <input className="input-field" value={form.docNumero} onChange={e => set('docNumero', e.target.value)} required placeholder="12345678" />
                 </Field>
               </div>
             </div>

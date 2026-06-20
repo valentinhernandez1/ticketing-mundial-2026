@@ -31,3 +31,18 @@
   .badge-zinc   { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700; }
   .badge-blue   { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-900/40 text-blue-400 border border-blue-800/50; }
 }
+
+/* html5-qrcode dark mode overrides */
+#qr-reader {
+  border: none !important;
+  padding: 0 !important;
+}
+#qr-reader video {
+  border-radius: 0 !important;
+}
+#qr-reader__scan_region {
+  background: transparent !important;
+}
+#qr-reader__dashboard {
+  display: none !important;
+}

@@ -95,7 +95,7 @@ export default function MisCompras() {
       )}
 
       <div className="flex flex-col gap-3">
-        {compras.map((compra) => {
+        {compras.map((compra, idx) => {
           const id = compra.idVenta
           const fecha = compra.fecha
           const estado = compra.estado

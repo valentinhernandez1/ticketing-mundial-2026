@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { Html5Qrcode } from 'html5-qrcode'
 import api from '../../api/client'
-import { ScanLine, CheckCircle, XCircle, Settings, Info } from 'lucide-react'
+import { ScanLine, CheckCircle, XCircle, Settings, Camera, CameraOff, Type } from 'lucide-react'
 
 const DEVICE_KEY = 'validador_device_id'
 
@@ -11,6 +12,11 @@ export default function Validador() {
   const [detalle, setDetalle] = useState('')
   const [validando, setValidando] = useState(false)
   const [showDeviceEdit, setShowDeviceEdit] = useState(!localStorage.getItem(DEVICE_KEY))
+  const [modo, setModo] = useState('camara') // 'camara' | 'manual'
+  const [escaneando, setEscaneando] = useState(false)
+  const [errorCamara, setErrorCamara] = useState('')
+  const scannerRef = useRef(null)
+  const html5QrRef = useRef(null)
 
   const saveDevice = () => {
     if (deviceId.trim()) {
@@ -19,21 +25,62 @@ export default function Validador() {
     }
   }
 
-  const validar = async (e) => {
-    e.preventDefault()
-    if (!deviceId) { setDetalle('Configurá el ID del dispositivo primero'); return }
-    if (!codigoQr.trim()) return
+  const iniciarCamara = async () => {
+    setErrorCamara('')
+    try {
+      const html5Qr = new Html5Qrcode('qr-reader')
+      html5QrRef.current = html5Qr
+      setEscaneando(true)
+      await html5Qr.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        async (decodedText) => {
+          await detenerCamara()
+          await procesarCodigo(decodedText)
+        },
+        () => {} // errores de frame, los ignoro
+      )
+    } catch (err) {
+      setEscaneando(false)
+      setErrorCamara('No se pudo acceder a la cámara. Usá el modo manual.')
+      setModo('manual')
+    }
+  }
+
+  const detenerCamara = async () => {
+    if (html5QrRef.current) {
+      try { await html5QrRef.current.stop() } catch {}
+      html5QrRef.current = null
+    }
+    setEscaneando(false)
+  }
+
+  // limpio la cámara al desmontar
+  useEffect(() => {
+    return () => { detenerCamara() }
+  }, [])
+
+  // cuando cambio a modo manual detengo la cámara
+  useEffect(() => {
+    if (modo === 'manual') detenerCamara()
+  }, [modo])
+
+  const procesarCodigo = async (codigo) => {
+    if (!deviceId) {
+      setResultado('RECHAZADO')
+      setDetalle('Configurá el ID del dispositivo primero')
+      return
+    }
     setValidando(true)
     setResultado(null)
     setDetalle('')
     try {
       const { data } = await api.post('/validaciones', {
-        codigoQr: codigoQr.trim(),
+        codigoQr: codigo.trim(),
         idDispositivo: parseInt(deviceId),
       })
       setResultado(data.resultado === 'ACEPTADO' ? 'ACEPTADO' : 'RECHAZADO')
       setDetalle(data.mensaje || '')
-      setCodigoQr('')
     } catch (err) {
       setResultado('RECHAZADO')
       setDetalle(err.response?.data?.detalle || err.response?.data?.message || 'Error al validar')
@@ -42,9 +89,21 @@ export default function Validador() {
     }
   }
 
+  const validarManual = async (e) => {
+    e.preventDefault()
+    if (!codigoQr.trim()) return
+    await procesarCodigo(codigoQr)
+    setCodigoQr('')
+  }
+
+  // auto-limpiar resultado y reiniciar cámara
   useEffect(() => {
     if (!resultado) return
-    const t = setTimeout(() => { setResultado(null); setDetalle('') }, 6000)
+    const t = setTimeout(() => {
+      setResultado(null)
+      setDetalle('')
+      if (modo === 'camara' && !escaneando) iniciarCamara()
+    }, 5000)
     return () => clearTimeout(t)
   }, [resultado])
 
@@ -56,13 +115,13 @@ export default function Validador() {
       </div>
 
       {/* Config dispositivo */}
-      <div className="card mb-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Settings size={14} className="text-zinc-500" />
+            <Settings size={13} className="text-zinc-500" />
             <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Dispositivo</span>
           </div>
-          <button onClick={() => setShowDeviceEdit(v => !v)} className="btn-ghost text-xs">
+          <button onClick={() => setShowDeviceEdit(v => !v)} className="text-xs text-zinc-500 hover:text-zinc-300">
             {showDeviceEdit ? 'Cancelar' : 'Editar'}
           </button>
         </div>
@@ -70,23 +129,51 @@ export default function Validador() {
           <div className="flex gap-2">
             <input
               type="number"
-              className="input-field flex-1"
+              className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
               value={deviceId}
               onChange={e => setDeviceId(e.target.value)}
-              placeholder="ID del dispositivo (ej: 1)"
+              placeholder="ID del dispositivo"
             />
-            <button onClick={saveDevice} className="btn-primary px-4">Guardar</button>
+            <button onClick={saveDevice} className="bg-green-600 hover:bg-green-500 text-white font-bold px-4 py-2 rounded-lg text-sm transition-all">
+              OK
+            </button>
           </div>
         ) : (
-          <p className="text-zinc-300 font-mono text-sm">
-            Dispositivo #{deviceId || <span className="text-red-400">sin configurar</span>}
+          <p className={`font-mono text-sm ${deviceId ? 'text-green-400' : 'text-red-400'}`}>
+            {deviceId ? `Dispositivo #${deviceId}` : 'Sin configurar'}
           </p>
         )}
       </div>
 
+      {/* Selector de modo */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setModo('camara')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+            modo === 'camara'
+              ? 'bg-green-900/30 border-green-800 text-green-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'
+          }`}
+        >
+          <Camera size={16} />
+          Escanear con cámara
+        </button>
+        <button
+          onClick={() => setModo('manual')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+            modo === 'manual'
+              ? 'bg-green-900/30 border-green-800 text-green-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'
+          }`}
+        >
+          <Type size={16} />
+          Ingresar código
+        </button>
+      </div>
+
       {/* Resultado */}
       {resultado && (
-        <div className={`rounded-2xl border-2 p-8 text-center mb-6 ${
+        <div className={`rounded-2xl border-2 p-8 text-center mb-4 ${
           resultado === 'ACEPTADO'
             ? 'bg-green-950/50 border-green-500 shadow-lg shadow-green-900/30'
             : 'bg-red-950/50 border-red-500 shadow-lg shadow-red-900/30'
@@ -94,76 +181,99 @@ export default function Validador() {
           {resultado === 'ACEPTADO' ? (
             <>
               <CheckCircle size={56} className="text-green-400 mx-auto mb-3" strokeWidth={1.5} />
-              <p className="text-4xl font-black text-green-400" style={{ textShadow: '0 0 30px rgba(74,222,128,0.5)' }}>
-                ACEPTADO
-              </p>
+              <p className="text-4xl font-black text-green-400">ACEPTADO</p>
               <p className="text-zinc-400 text-sm mt-2">Ingreso registrado ✓</p>
             </>
           ) : (
             <>
               <XCircle size={56} className="text-red-400 mx-auto mb-3" strokeWidth={1.5} />
-              <p className="text-4xl font-black text-red-400" style={{ textShadow: '0 0 30px rgba(239,68,68,0.5)' }}>
-                RECHAZADO
-              </p>
+              <p className="text-4xl font-black text-red-400">RECHAZADO</p>
             </>
           )}
           {detalle && <p className="text-sm text-zinc-400 mt-2">{detalle}</p>}
+          <p className="text-xs text-zinc-600 mt-3">Se limpia en 5 segundos...</p>
         </div>
       )}
 
-      {/* Formulario */}
-      <div className="card">
-        <h2 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-          <ScanLine size={16} className="text-green-400" />
-          Escanear código QR
-        </h2>
-        <p className="text-xs text-zinc-500 mb-4">
-          Pegá o escribí el código del QR de la entrada
-        </p>
-
-        <form onSubmit={validar} className="flex flex-col gap-4">
-          <div>
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">
-              Código QR
-            </label>
-            <input
-              type="text"
-              className="input-field font-mono text-sm"
-              value={codigoQr}
-              onChange={e => setCodigoQr(e.target.value)}
-              placeholder="1:bf67ff407a8c..."
-              required
-              autoFocus
-            />
-            <p className="text-xs text-zinc-600 mt-1 flex items-center gap-1">
-              <Info size={10} />
-              Formato: idEntrada:codigoToken
-            </p>
-          </div>
-
-          <button
-            type="submit"
-            disabled={validando || !deviceId || !codigoQr.trim()}
-            className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-bold disabled:opacity-60"
-          >
-            {validando ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Validando...
-              </>
-            ) : (
-              <>
-                <ScanLine size={18} />
-                Validar acceso
-              </>
+      {/* MODO CÁMARA */}
+      {modo === 'camara' && !resultado && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+          {/* Área del scanner */}
+          <div className="relative bg-black" style={{ minHeight: 280 }}>
+            <div id="qr-reader" className="w-full" />
+            {!escaneando && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                {errorCamara && (
+                  <p className="text-red-400 text-sm text-center px-4">{errorCamara}</p>
+                )}
+                <button
+                  onClick={iniciarCamara}
+                  disabled={!deviceId}
+                  className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition-all"
+                >
+                  <Camera size={18} />
+                  Iniciar cámara
+                </button>
+                {!deviceId && <p className="text-xs text-yellow-500">Configurá el dispositivo primero</p>}
+              </div>
             )}
-          </button>
-        </form>
-      </div>
+            {escaneando && (
+              <div className="absolute top-2 right-2">
+                <button
+                  onClick={detenerCamara}
+                  className="bg-zinc-800/80 backdrop-blur text-zinc-300 hover:text-white p-2 rounded-lg"
+                >
+                  <CameraOff size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+          {escaneando && (
+            <div className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-green-400 text-sm font-medium">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                Esperando código QR...
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-      <p className="text-center text-xs text-zinc-700 mt-6">
-        El resultado se limpia a los 6 segundos
-      </p>
+      {/* MODO MANUAL */}
+      {modo === 'manual' && !resultado && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+            <ScanLine size={15} className="text-green-400" />
+            Ingresar código QR
+          </h2>
+          <form onSubmit={validarManual} className="flex flex-col gap-3">
+            <div>
+              <input
+                type="text"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/30"
+                value={codigoQr}
+                onChange={e => setCodigoQr(e.target.value)}
+                placeholder="1:bf67ff407a8c..."
+                required
+                autoFocus
+              />
+              <p className="text-xs text-zinc-600 mt-1">Formato: idEntrada:codigoToken</p>
+            </div>
+            <button
+              type="submit"
+              disabled={validando || !deviceId || !codigoQr.trim()}
+              className="bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+            >
+              {validando ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <ScanLine size={18} />
+              )}
+              Validar
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

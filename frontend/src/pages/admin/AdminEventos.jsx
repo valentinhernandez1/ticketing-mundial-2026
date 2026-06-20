@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react'
 import api from '../../api/client'
 import { Calendar, Plus, XCircle, AlertCircle, CheckCircle, Layers } from 'lucide-react'
 
+const Field = ({ label, children }) => (
+  <div>
+    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">{label}</label>
+    {children}
+  </div>
+)
+
 export default function AdminEventos() {
   const [catalogos, setCatalogos] = useState({ estadios: [], selecciones: [] })
   const [eventos, setEventos] = useState([])
@@ -10,11 +17,12 @@ export default function AdminEventos() {
   const [success, setSuccess] = useState('')
 
   const [eventoForm, setEventoForm] = useState({
-    idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '90'
+    idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '120'
   })
   const [sectorForm, setSectorForm] = useState({
-    idEvento: '', nombreSector: 'A', cupo: '', precio: ''
+    idEvento: '', idSector: '', cupo: '', precio: ''
   })
+  const [sectoresEstadio, setSectoresEstadio] = useState([])
   const [creandoEvento, setCreandoEvento] = useState(false)
   const [creandoSector, setCreandoSector] = useState(false)
   const [cancelando, setCancelando] = useState(null)
@@ -36,6 +44,16 @@ export default function AdminEventos() {
 
   useEffect(() => { cargar() }, [])
 
+  // cuando cambia el evento cargo los sectores del estadio correspondiente
+  useEffect(() => {
+    if (!sectorForm.idEvento) { setSectoresEstadio([]); return }
+    const ev = eventos.find(e => String(e.idEvento) === String(sectorForm.idEvento))
+    if (!ev) return
+    api.get(`/consulta/estadios/${ev.idEstadio}/sectores`)
+      .then(r => setSectoresEstadio(r.data))
+      .catch(() => setSectoresEstadio([]))
+  }, [sectorForm.idEvento, eventos])
+
   const crearEvento = async (e) => {
     e.preventDefault()
     setError(''); setSuccess(''); setCreandoEvento(true)
@@ -44,14 +62,14 @@ export default function AdminEventos() {
         idEstadio: parseInt(eventoForm.idEstadio),
         idSeleccionLocal: parseInt(eventoForm.idLocal),
         idSeleccionVisitante: parseInt(eventoForm.idVisitante),
-        fechaHora: eventoForm.fechaHora,
+        fechaHoraInicio: eventoForm.fechaHora ? new Date(eventoForm.fechaHora).toISOString() : null,
         duracionMinutos: parseInt(eventoForm.duracion),
       })
       setSuccess('Evento creado exitosamente')
-      setEventoForm({ idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '90' })
+      setEventoForm({ idEstadio: '', idLocal: '', idVisitante: '', fechaHora: '', duracion: '120' })
       cargar()
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al crear evento')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al crear evento')
     } finally {
       setCreandoEvento(false)
     }
@@ -62,14 +80,14 @@ export default function AdminEventos() {
     setError(''); setSuccess(''); setCreandoSector(true)
     try {
       await api.post(`/eventos/${sectorForm.idEvento}/sectores`, {
-        nombreSector: sectorForm.nombreSector,
+        idSector: parseInt(sectorForm.idSector),
         cupo: parseInt(sectorForm.cupo),
         precio: parseFloat(sectorForm.precio),
       })
       setSuccess('Sector habilitado para el evento')
-      setSectorForm({ idEvento: '', nombreSector: 'A', cupo: '', precio: '' })
+      setSectorForm({ idEvento: '', idSector: '', cupo: '', precio: '' })
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al habilitar sector')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al habilitar sector')
     } finally {
       setCreandoSector(false)
     }
@@ -83,18 +101,11 @@ export default function AdminEventos() {
       setSuccess('Evento cancelado')
       cargar()
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data || 'Error al cancelar')
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al cancelar')
     } finally {
       setCancelando(null)
     }
   }
-
-  const Field = ({ label, children }) => (
-    <div>
-      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">{label}</label>
-      {children}
-    </div>
-  )
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -197,12 +208,15 @@ export default function AdminEventos() {
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Sector">
-                <select className="input-field" value={sectorForm.nombreSector}
-                  onChange={e => setSectorForm(f => ({ ...f, nombreSector: e.target.value }))}>
-                  <option value="A">A — VIP</option>
-                  <option value="B">B — Platea</option>
-                  <option value="C">C — Popular</option>
-                  <option value="D">D — General</option>
+                <select className="input-field" value={sectorForm.idSector}
+                  onChange={e => setSectorForm(f => ({ ...f, idSector: e.target.value }))}
+                  required>
+                  <option value="">Seleccioná un sector...</option>
+                  {sectoresEstadio.map(s => (
+                    <option key={s.id ?? s.id_sector} value={s.id ?? s.id_sector}>
+                      Sector {s.nombre ?? s.nombre_sector}
+                    </option>
+                  ))}
                 </select>
               </Field>
               <Field label="Cupo">
