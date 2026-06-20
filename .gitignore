@@ -1,0 +1,24 @@
+# Informes (van a WebAsignatura, no a GitHub)
+*.pdf
+*.docx
+*.doc
+
+# Archivos temporales
+*.tmp
+.~lock.*
+*.lock
+
+# Build artifacts Spring Boot
+springboot/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Variables de entorno
+.env
