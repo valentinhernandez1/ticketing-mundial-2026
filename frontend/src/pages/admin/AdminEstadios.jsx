@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react'
 import api from '../../api/client'
 import { Building2, Plus, AlertCircle, CheckCircle, Layers } from 'lucide-react'
 
+const Field = ({ label, children }) => (
+  <div>
+    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">{label}</label>
+    {children}
+  </div>
+)
+
 export default function AdminEstadios() {
   const [catalogos, setCatalogos] = useState({ paises: [], estadios: [] })
   const [loading, setLoading] = useState(true)
@@ -12,7 +19,7 @@ export default function AdminEstadios() {
     nombre: '', idPais: '', ciudad: '', direccion: ''
   })
   const [sectorForm, setSectorForm] = useState({
-    idEstadio: '', nombreSector: 'A', capacidad: '', precio: ''
+    idEstadio: '', nombreSector: 'A', capacidadMaxima: '', precioBase: ''
   })
   const [creandoEstadio, setCreandoEstadio] = useState(false)
   const [creandoSector, setCreandoSector] = useState(false)
@@ -51,24 +58,18 @@ export default function AdminEstadios() {
     try {
       await api.post(`/estadios/${sectorForm.idEstadio}/sectores`, {
         nombreSector: sectorForm.nombreSector,
-        capacidad: parseInt(sectorForm.capacidad),
+        capacidadMaxima: parseInt(sectorForm.capacidadMaxima),
+        precioBase: parseFloat(sectorForm.precioBase),
         precio: parseFloat(sectorForm.precio),
       })
       setSuccess('Sector agregado exitosamente')
-      setSectorForm({ idEstadio: '', nombreSector: 'A', capacidad: '', precio: '' })
+      setSectorForm({ idEstadio: '', nombreSector: 'A', capacidadMaxima: '', precioBase: '' })
     } catch (err) {
       setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al crear sector')
     } finally {
       setCreandoSector(false)
     }
   }
-
-  const Field = ({ label, children }) => (
-    <div>
-      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5 block">{label}</label>
-      {children}
-    </div>
-  )
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -194,8 +195,8 @@ export default function AdminEstadios() {
                 <input
                   type="number"
                   className="input-field"
-                  value={sectorForm.capacidad}
-                  onChange={e => setSectorForm(f => ({ ...f, capacidad: e.target.value }))}
+                  value={sectorForm.capacidadMaxima}
+                  onChange={e => setSectorForm(f => ({ ...f, capacidadMaxima: e.target.value }))}
                   placeholder="5000"
                   min="1"
                   required
@@ -207,8 +208,8 @@ export default function AdminEstadios() {
                 type="number"
                 step="0.01"
                 className="input-field"
-                value={sectorForm.precio}
-                onChange={e => setSectorForm(f => ({ ...f, precio: e.target.value }))}
+                value={sectorForm.precioBase}
+                onChange={e => setSectorForm(f => ({ ...f, precioBase: e.target.value }))}
                 placeholder="150.00"
                 min="0"
                 required
