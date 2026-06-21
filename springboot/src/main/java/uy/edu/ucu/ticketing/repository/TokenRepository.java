@@ -31,8 +31,10 @@ public class TokenRepository {
                        sv.nombre             AS "seleccionVisitante",
                        est.nombre            AS "estadio",
                        est.ciudad            AS "ciudad",
-                       ev.fecha_hora_inicio  AS "fechaHora"
+                       ev.fecha_hora_inicio  AS "fechaHora",
+                       v.estado::text        AS "estadoVenta"
                 FROM entrada e
+                JOIN venta         v   ON v.id_venta  = e.id_venta
                 JOIN evento_sector es  ON es.id_evento_sector = e.id_evento_sector
                 JOIN sector        s   ON s.id_sector  = es.id_sector
                 JOIN evento        ev  ON ev.id_evento = es.id_evento

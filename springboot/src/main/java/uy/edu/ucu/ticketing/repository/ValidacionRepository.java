@@ -18,7 +18,7 @@ public class ValidacionRepository {
 
     public Optional<Map<String, Object>> findDispositivo(Long idDispositivo) {
         List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT id_dispositivo, id_funcionario, estado FROM dispositivo WHERE id_dispositivo = ?",
+                "SELECT id_dispositivo, id_funcionario, estado::text AS estado FROM dispositivo WHERE id_dispositivo = ?",
                 idDispositivo);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
@@ -31,17 +31,6 @@ public class ValidacionRepository {
                 WHERE id_entrada = ? AND codigo_token = ?
                   AND activo = TRUE AND fecha_expiracion > NOW()
                 """, idEntrada, codigoToken);
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
-    }
-
-    // (se mantiene para compatibilidad interna)
-    public Optional<Map<String, Object>> findTokenActivo(Long idToken, Long idEntrada) {
-        List<Map<String, Object>> rows = jdbc.queryForList("""
-                SELECT id_token, id_entrada, codigo_token, activo, fecha_expiracion
-                FROM token_qr
-                WHERE id_token = ? AND id_entrada = ?
-                  AND activo = TRUE AND fecha_expiracion > NOW()
-                """, idToken, idEntrada);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 

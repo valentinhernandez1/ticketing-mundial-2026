@@ -110,6 +110,7 @@ public class CompraService {
         compraRepo.marcarPaga(idVenta);
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> comprasDeUsuario(Long idUsuario) {
         return compraRepo.comprasDeUsuario(idUsuario);
     }

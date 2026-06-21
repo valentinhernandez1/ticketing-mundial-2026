@@ -2,6 +2,7 @@ package uy.edu.ucu.ticketing.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import uy.edu.ucu.ticketing.repository.DispositivoRepository;
 import java.util.List;
@@ -16,10 +17,12 @@ public class DispositivoService {
         this.dispositivoRepo = dispositivoRepo;
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> listar() {
         return dispositivoRepo.findAll();
     }
 
+    @Transactional
     public Long registrar(String identificadorFisico, Long idFuncionario) {
         if (!dispositivoRepo.existeFuncionario(idFuncionario))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -28,6 +31,7 @@ public class DispositivoService {
         return dispositivoRepo.insertar(identificadorFisico, idFuncionario);
     }
 
+    @Transactional
     public void desactivar(Long idDispositivo) {
         dispositivoRepo.findById(idDispositivo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,

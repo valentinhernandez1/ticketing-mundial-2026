@@ -17,11 +17,11 @@ public class DispositivoRepository {
 
     public List<Map<String, Object>> findAll() {
         return jdbc.queryForList("""
-                SELECT d.id_dispositivo, d.identificador_fisico, d.estado,
+                SELECT d.id_dispositivo, d.identificador_fisico, d.estado::text AS estado,
                        d.fecha_registro,
                        u.nombre AS funcionario_nombre,
                        u.apellido AS funcionario_apellido,
-                       u.email AS funcionario_email,
+                       u.email::text AS funcionario_email,
                        fv.numero_legajo
                 FROM dispositivo d
                 JOIN funcionario_validacion fv ON fv.id_usuario = d.id_funcionario
@@ -52,7 +52,8 @@ public class DispositivoRepository {
 
     public Optional<Map<String, Object>> findById(Long idDispositivo) {
         List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT * FROM dispositivo WHERE id_dispositivo = ?", idDispositivo);
+                "SELECT id_dispositivo, identificador_fisico, estado::text AS estado, fecha_registro, id_funcionario FROM dispositivo WHERE id_dispositivo = ?",
+                idDispositivo);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 }

@@ -1,6 +1,7 @@
 package uy.edu.ucu.ticketing.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import uy.edu.ucu.ticketing.dto.ConsultaDtos.*;
 import uy.edu.ucu.ticketing.repository.ConsultaRepository;
 
@@ -21,6 +22,7 @@ public class ConsultaService {
     private static long num(Object o) { return o == null ? 0L : ((Number) o).longValue(); }
     private static String str(Object o) { return o == null ? "" : o.toString(); }
 
+    @Transactional(readOnly = true)
     public List<EventoDisp> eventosDisponibles() {
         List<Map<String, Object>> evs = consultaRepo.eventosDisponibles();
         List<EventoDisp> resultado = new ArrayList<>();
@@ -44,6 +46,7 @@ public class ConsultaService {
         return resultado;
     }
 
+    @Transactional(readOnly = true)
     public Catalogos catalogos() {
         List<Item> paises = consultaRepo.paisesSede().stream()
                 .map(r -> new Item(num(r.get("id_pais")), str(r.get("nombre")))).toList();
@@ -54,11 +57,13 @@ public class ConsultaService {
         return new Catalogos(paises, selecciones, estadios);
     }
 
+    @Transactional(readOnly = true)
     public List<Item> sectoresDeEstadio(Long idEstadio) {
         return consultaRepo.sectoresDeEstadio(idEstadio).stream()
                 .map(r -> new Item(num(r.get("id_sector")), str(r.get("nombre")))).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> funcionarios() {
         return consultaRepo.funcionarios();
     }

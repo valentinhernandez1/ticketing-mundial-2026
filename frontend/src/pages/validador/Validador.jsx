@@ -30,7 +30,7 @@ export default function Validador() {
     try {
       const html5Qr = new Html5Qrcode('qr-reader')
       html5QrRef.current = html5Qr
-      setEscaneando(true)
+      // start() primero — el div debe existir en el DOM antes de llamar setEscaneando
       await html5Qr.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -38,12 +38,17 @@ export default function Validador() {
           await detenerCamara()
           await procesarCodigo(decodedText)
         },
-        () => {} // errores de frame, los ignoro
+        () => {}
       )
+      setEscaneando(true)
     } catch (err) {
       setEscaneando(false)
-      setErrorCamara('No se pudo acceder a la cámara. Usá el modo manual.')
-      setModo('manual')
+      const msg = err?.message || String(err)
+      if (msg.includes('permission') || msg.includes('Permission') || msg.includes('NotAllowed')) {
+        setErrorCamara('Permiso de cámara denegado. Andá a Configuración del celular y habilitá la cámara para este sitio.')
+      } else {
+        setErrorCamara('No se pudo acceder a la cámara. Usá el modo manual.')
+      }
     }
   }
 

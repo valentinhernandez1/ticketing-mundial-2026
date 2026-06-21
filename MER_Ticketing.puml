@@ -1,0 +1,316 @@
+@startuml MER_Ticketing_Mundial2026
+
+left to right direction
+skinparam linetype ortho
+hide circle
+
+skinparam entity {
+    BackgroundColor #1e1e2e
+    BorderColor #89b4fa
+    FontColor #cdd6f4
+}
+skinparam arrow {
+    Color #89b4fa
+}
+skinparam backgroundColor #181825
+
+' ─────────────────────────────────────────
+'  BLOQUE 1 — GEOGRAFÍA / INFRAESTRUCTURA
+' ─────────────────────────────────────────
+
+entity PAIS {
+    *id_pais : INT <<PK>>
+    --
+    codigo_iso : CHAR(3)
+    nombre     : VARCHAR(80)
+}
+
+entity PAIS_SEDE {
+    *id_pais         : INT <<PK, FK>>
+    --
+    fecha_alta_sede  : DATE
+}
+
+entity DIRECCION {
+    *id_direccion    : INT <<PK>>
+    --
+    id_pais          : INT <<FK>>
+    localidad        : VARCHAR(100)
+    calle            : VARCHAR(100)
+    numero           : VARCHAR(10)
+    codigo_postal    : VARCHAR(20)
+}
+
+entity ESTADIO {
+    *id_estadio  : INT <<PK>>
+    --
+    id_pais      : INT <<FK>>
+    nombre       : VARCHAR(120)
+    ciudad       : VARCHAR(100)
+    direccion    : VARCHAR(200)
+}
+
+entity SECTOR {
+    *id_sector         : INT <<PK>>
+    --
+    id_estadio         : INT <<FK>>
+    nombre_sector      : CHAR(1)
+    capacidad_maxima   : INT
+    precio_base        : DECIMAL(10,2)
+    ' UNIQUE(id_estadio, nombre_sector)
+}
+
+entity SELECCION {
+    *id_seleccion  : INT <<PK>>
+    --
+    nombre         : VARCHAR(80)
+    codigo_fifa    : CHAR(3) <<UNIQUE>>
+}
+
+' ─────────────────────────────────────────
+'  BLOQUE 2 — USUARIOS
+' ─────────────────────────────────────────
+
+entity USUARIO {
+    *id_usuario     : INT <<PK>>
+    --
+    email           : VARCHAR(120) <<UNIQUE>>
+    nombre          : VARCHAR(80)
+    apellido        : VARCHAR(80)
+    id_direccion    : INT <<FK>>
+    fecha_alta      : DATETIME
+    password_hash   : VARCHAR(255)
+}
+
+entity DOCUMENTO {
+    *id_documento    : INT <<PK>>
+    --
+    id_usuario       : INT <<FK>>
+    id_pais          : INT <<FK>>
+    tipo_documento   : VARCHAR(30)
+    numero           : VARCHAR(40)
+    ' UNIQUE(id_pais, tipo_documento, numero)
+}
+
+entity TELEFONO {
+    *id_telefono  : INT <<PK>>
+    --
+    id_usuario    : INT <<FK>>
+    numero        : VARCHAR(30)
+    tipo          : VARCHAR(20)
+}
+
+entity USUARIO_GENERAL {
+    *id_usuario            : INT <<PK, FK>>
+    --
+    fecha_registro         : DATE
+    identidad_verificada   : BOOLEAN
+}
+
+entity ADMINISTRADOR_PAIS {
+    *id_usuario         : INT <<PK, FK>>
+    --
+    id_pais             : INT <<FK>>
+    fecha_asignacion    : DATE
+}
+
+entity FUNCIONARIO_VALIDACION {
+    *id_usuario      : INT <<PK, FK>>
+    --
+    numero_legajo    : VARCHAR(30) <<UNIQUE>>
+}
+
+entity DISPOSITIVO {
+    *id_dispositivo         : INT <<PK>>
+    --
+    id_funcionario          : INT <<FK>>
+    identificador_fisico    : VARCHAR(100) <<UNIQUE>>
+    estado                  : VARCHAR(20)
+    fecha_registro          : DATE
+}
+
+' ─────────────────────────────────────────
+'  BLOQUE 3 — EVENTOS
+' ─────────────────────────────────────────
+
+entity EVENTO {
+    *id_evento                  : INT <<PK>>
+    --
+    id_estadio                  : INT <<FK>>
+    id_seleccion_local          : INT <<FK>>
+    id_seleccion_visitante      : INT <<FK>>
+    fecha_hora_inicio           : DATETIME
+    duracion_minutos            : INT
+    estado                      : VARCHAR(20)
+    id_administrador            : INT <<FK>>
+}
+
+entity EVENTO_SECTOR {
+    *id_evento_sector   : INT <<PK>>
+    --
+    id_evento           : INT <<FK>>
+    id_sector           : INT <<FK>>
+    cupo_habilitado     : INT
+    precio              : DECIMAL(10,2)
+    ' UNIQUE(id_evento, id_sector)
+}
+
+entity ASIGNACION_FUNCIONARIO_SECTOR {
+    *id_asignacion   : INT <<PK>>
+    --
+    id_funcionario   : INT <<FK>>
+    id_evento        : INT <<FK>>
+    id_sector        : INT <<FK>>
+    ' UNIQUE(id_funcionario, id_evento, id_sector)
+}
+
+' ─────────────────────────────────────────
+'  BLOQUE 4 — VENTAS Y ENTRADAS
+' ─────────────────────────────────────────
+
+entity COMISION {
+    *id_comision    : INT <<PK>>
+    --
+    porcentaje      : DECIMAL(5,2)
+    fecha_inicio    : DATE
+    fecha_fin       : DATE
+}
+
+entity VENTA {
+    *id_venta            : INT <<PK>>
+    --
+    id_usuario           : INT <<FK>>
+    fecha                : DATETIME
+    estado               : VARCHAR(20)
+    id_comision          : INT <<FK>>
+    porcentaje_aplicado  : DECIMAL(5,2)
+    subtotal             : DECIMAL(10,2)
+    monto_comision       : DECIMAL(10,2)
+    monto_total          : DECIMAL(10,2)
+}
+
+entity ENTRADA {
+    *id_entrada              : INT <<PK>>
+    --
+    codigo_unico             : UUID <<UNIQUE>>
+    id_venta                 : INT <<FK>>
+    id_evento_sector         : INT <<FK>>
+    id_usuario_actual        : INT <<FK>>
+    fecha_emision            : DATETIME
+    estado                   : VARCHAR(20)
+    precio                   : DECIMAL(10,2)
+    cantidad_transferencias  : INT
+}
+
+entity TRANSFERENCIA {
+    *id_transferencia    : INT <<PK>>
+    --
+    id_entrada           : INT <<FK>>
+    id_usuario_origen    : INT <<FK>>
+    id_usuario_destino   : INT <<FK>>
+    fecha_transferencia  : DATETIME
+    fecha_aceptacion     : DATETIME
+    estado               : VARCHAR(20)
+}
+
+entity TOKEN_QR {
+    *id_token        : INT <<PK>>
+    --
+    id_entrada       : INT <<FK>>
+    codigo_token     : VARCHAR(255) <<UNIQUE>>
+    fecha_generacion : DATETIME
+    fecha_expiracion : DATETIME
+    activo           : BOOLEAN
+}
+
+' ─────────────────────────────────────────
+'  BLOQUE 5 — VALIDACIÓN Y AUDITORÍA
+' ─────────────────────────────────────────
+
+entity VALIDACION {
+    *id_validacion       : INT <<PK>>
+    --
+    id_entrada           : INT <<FK>>
+    id_token             : INT <<FK>>
+    id_funcionario       : INT <<FK>>
+    id_dispositivo       : INT <<FK>>
+    fecha_hora           : DATETIME
+    codigo_qr_validado   : VARCHAR(255)
+    resultado            : VARCHAR(20)
+}
+
+entity AUDITORIA_TRANSFERENCIA {
+    *id_auditoria        : INT <<PK>>
+    --
+    id_transferencia     : INT <<FK>>
+    id_entrada           : INT <<FK>>
+    id_usuario_origen    : INT
+    id_usuario_destino   : INT
+    estado_anterior      : VARCHAR(20)
+    estado_nuevo         : VARCHAR(20)
+    accion               : VARCHAR(50)
+    fecha_evento         : DATETIME
+}
+
+' ═══════════════════════════════════════════
+'  RELACIONES
+' ═══════════════════════════════════════════
+
+' -- Geografía --
+PAIS           ||--o{ PAIS_SEDE         : "es sede"
+PAIS           ||--o{ DIRECCION         : "tiene"
+PAIS_SEDE      ||--o{ ESTADIO           : "aloja"
+PAIS_SEDE      ||--o{ ADMINISTRADOR_PAIS : "administrado por"
+
+' -- Usuarios base --
+DIRECCION      ||--|| USUARIO           : "1:1"
+USUARIO        ||--|| DOCUMENTO         : "tiene"
+PAIS           ||--o{ DOCUMENTO         : "emite"
+USUARIO        ||--o{ TELEFONO          : "tiene"
+
+' -- Especialización de usuario --
+USUARIO        ||--|| USUARIO_GENERAL           : "es"
+USUARIO        ||--|| ADMINISTRADOR_PAIS        : "es"
+USUARIO        ||--|| FUNCIONARIO_VALIDACION    : "es"
+
+' -- Dispositivos --
+FUNCIONARIO_VALIDACION ||--o{ DISPOSITIVO : "usa"
+
+' -- Eventos --
+ESTADIO        ||--o{ EVENTO            : "sede de"
+SELECCION      ||--o{ EVENTO            : "local en"
+SELECCION      ||--o{ EVENTO            : "visitante en"
+ADMINISTRADOR_PAIS ||--o{ EVENTO        : "gestiona"
+ESTADIO        ||--o{ SECTOR            : "tiene"
+EVENTO         ||--o{ EVENTO_SECTOR     : "tiene"
+SECTOR         ||--o{ EVENTO_SECTOR     : "incluido en"
+
+' -- Asignación funcionarios --
+FUNCIONARIO_VALIDACION ||--o{ ASIGNACION_FUNCIONARIO_SECTOR : "asignado a"
+EVENTO         ||--o{ ASIGNACION_FUNCIONARIO_SECTOR : "en"
+SECTOR         ||--o{ ASIGNACION_FUNCIONARIO_SECTOR : "en"
+
+' -- Ventas --
+USUARIO_GENERAL ||--o{ VENTA            : "realiza"
+COMISION        ||--o{ VENTA            : "aplica"
+VENTA           ||--o{ ENTRADA          : "contiene"
+EVENTO_SECTOR   ||--o{ ENTRADA          : "para"
+USUARIO_GENERAL ||--o{ ENTRADA          : "posee"
+
+' -- Transferencias --
+ENTRADA         ||--o{ TRANSFERENCIA    : "transferida en"
+USUARIO_GENERAL ||--o{ TRANSFERENCIA    : "origen"
+USUARIO_GENERAL ||--o{ TRANSFERENCIA    : "destino"
+
+' -- QR y validación --
+ENTRADA         ||--o{ TOKEN_QR         : "genera"
+ENTRADA         ||--o{ VALIDACION       : "validada en"
+TOKEN_QR        ||--o{ VALIDACION       : "usado en"
+FUNCIONARIO_VALIDACION ||--o{ VALIDACION : "realiza"
+DISPOSITIVO     ||--o{ VALIDACION       : "registra"
+
+' -- Auditoría --
+TRANSFERENCIA   ||--o{ AUDITORIA_TRANSFERENCIA : "auditada en"
+ENTRADA         ||--o{ AUDITORIA_TRANSFERENCIA : "referencia"
+
+@enduml

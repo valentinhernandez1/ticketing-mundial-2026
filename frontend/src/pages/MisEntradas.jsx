@@ -17,6 +17,12 @@ const ESTADO_BADGE = {
   TRANSFERIDA: <span className="badge-blue">TRANSFERIDA</span>,
 }
 
+const VENTA_BADGE = {
+  PENDIENTE:  <span className="badge-yellow">⚠ Pendiente de pago</span>,
+  CONFIRMADA: <span className="badge-blue">⚠ Confirmada — sin pagar</span>,
+  PAGA:       null,
+}
+
 function QRModal({ entradaId, onClose }) {
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [countdown, setCountdown] = useState(30)
@@ -165,7 +171,9 @@ export default function MisEntradas() {
           const sector = entrada.nombreSector || entrada.sector || 'D'
           const borderColor = SECTOR_BORDER[sector] || SECTOR_BORDER.D
           const estado = entrada.estado || 'EMITIDA'
-          const canQr = estado === 'EMITIDA'
+          const estadoVenta = entrada.estadoVenta || 'PAGA'
+          const ventaPaga = estadoVenta === 'PAGA'
+          const canQr = estado === 'EMITIDA' && ventaPaga
 
           return (
             <div
@@ -184,6 +192,7 @@ export default function MisEntradas() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="badge-zinc">Sector {sector}</span>
                   {ESTADO_BADGE[estado] || <span className="badge-zinc">{estado}</span>}
+                  {VENTA_BADGE[estadoVenta]}
                 </div>
               </div>
               <div className="text-right shrink-0">
@@ -196,6 +205,9 @@ export default function MisEntradas() {
                     <Ticket size={12} />
                     Ver QR
                   </button>
+                )}
+                {estado === 'EMITIDA' && !ventaPaga && (
+                  <p className="text-yellow-500 text-xs mt-2">Pagá la compra para acceder al QR</p>
                 )}
               </div>
             </div>

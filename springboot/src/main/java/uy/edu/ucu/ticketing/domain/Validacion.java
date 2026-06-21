@@ -1,6 +1,7 @@
 package uy.edu.ucu.ticketing.domain;
 
 import lombok.*;
+import uy.edu.ucu.ticketing.domain.enums.ResultadoValidacion;
 import java.time.OffsetDateTime;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -12,5 +13,5 @@ public class Validacion {
     private Long idDispositivo;
     private OffsetDateTime fechaHora;
     private String codigoQrValidado;
-    private String resultado;
+    private ResultadoValidacion resultado;
 }

@@ -1,11 +1,9 @@
 package uy.edu.ucu.ticketing.service;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import uy.edu.ucu.ticketing.dto.AuthDtos.*;
 import uy.edu.ucu.ticketing.repository.AuthRepository;
 import uy.edu.ucu.ticketing.security.JwtService;
@@ -45,6 +43,7 @@ public class AuthService {
         return new AuthResponse(token, "USUARIO_GENERAL", id);
     }
 
+    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest req) {
         Map<String, Object> user = authRepo.findByEmail(req.email())
                 .orElseThrow(() -> new BadCredentialsException("Credenciales invalidas"));

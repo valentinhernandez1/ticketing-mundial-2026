@@ -1,5 +1,8 @@
 package uy.edu.ucu.ticketing.controller;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uy.edu.ucu.ticketing.service.DispositivoService;
@@ -17,16 +20,16 @@ public class DispositivoController {
         this.dispositivoService = dispositivoService;
     }
 
+    public record DispositivoRequest(@NotBlank String identificadorFisico, @NotNull Long idFuncionario) {}
+
     @GetMapping
     public List<Map<String, Object>> listar() {
         return dispositivoService.listar();
     }
 
     @PostMapping
-    public Map<String, Object> registrar(@RequestBody Map<String, Object> body) {
-        String identificador = (String) body.get("identificadorFisico");
-        Long idFuncionario = ((Number) body.get("idFuncionario")).longValue();
-        Long id = dispositivoService.registrar(identificador, idFuncionario);
+    public Map<String, Object> registrar(@Valid @RequestBody DispositivoRequest req) {
+        Long id = dispositivoService.registrar(req.identificadorFisico(), req.idFuncionario());
         return Map.of("idDispositivo", id);
     }
 

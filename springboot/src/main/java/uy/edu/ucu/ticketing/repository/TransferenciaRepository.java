@@ -44,10 +44,6 @@ public class TransferenciaRepository {
                 """, Long.class, idEntrada, idOrigen, idDestino);
     }
 
-    public Long insertarTransferencia(Long idEntrada, Long idOrigen, Long idDestino) {
-        return iniciarTransferencia(idEntrada, idOrigen, idDestino);
-    }
-
     // acepto: cambio el titular de la entrada y sumo 1 al contador
     public void aceptarTransferencia(Long idTransferencia, Long idDestino) {
         Map<String, Object> t = jdbc.queryForMap(

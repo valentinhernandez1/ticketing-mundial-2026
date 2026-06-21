@@ -1,12 +1,10 @@
 package uy.edu.ucu.ticketing.controller;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import uy.edu.ucu.ticketing.repository.TokenRepository;
+import uy.edu.ucu.ticketing.service.EntradaService;
 
 import java.util.Map;
 
@@ -14,20 +12,16 @@ import java.util.Map;
 @RequestMapping("/api/entradas")
 public class EntradaTokenController {
 
-    private final TokenRepository tokenRepo;
+    private final EntradaService entradaService;
 
-    public EntradaTokenController(TokenRepository tokenRepo) {
-        this.tokenRepo = tokenRepo;
+    public EntradaTokenController(EntradaService entradaService) {
+        this.entradaService = entradaService;
     }
 
     @PostMapping("/{id}/token")
     @PreAuthorize("hasRole('USUARIO_GENERAL')")
     public ResponseEntity<Map<String, Object>> generarToken(@PathVariable Long id,
                                                              @AuthenticationPrincipal Long uid) {
-        tokenRepo.findEntradaDeUsuario(id, uid)
-                .filter(e -> !"CONSUMIDA".equals(e.get("estado")))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Esta entrada no es tuya o ya fue consumida"));
-        return ResponseEntity.ok(tokenRepo.generarToken(id));
+        return ResponseEntity.ok(entradaService.generarToken(id, uid));
     }
 }

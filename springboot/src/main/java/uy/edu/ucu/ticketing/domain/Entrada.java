@@ -17,4 +17,5 @@ public class Entrada {
     private EstadoEntrada estado;
     private BigDecimal precio;
     private Integer cantidadTransferencias;
+    private TokenQr tokenActivo;
 }
