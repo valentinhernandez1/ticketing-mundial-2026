@@ -37,7 +37,7 @@ public class DispositivoRepository {
         return count != null && count > 0;
     }
 
-    // inserto el dispositivo con estado ACTIVO por default
+    // arranca ACTIVO por defecto
     public Long insertar(String identificadorFisico, Long idFuncionario) {
         return jdbc.queryForObject("""
                 INSERT INTO dispositivo (identificador_fisico, id_funcionario, estado)

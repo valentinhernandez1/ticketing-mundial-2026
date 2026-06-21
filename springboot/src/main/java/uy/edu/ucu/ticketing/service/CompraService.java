@@ -32,7 +32,7 @@ public class CompraService {
         if (items.size() > 5)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No podés comprar más de 5 entradas por transacción");
 
-        // traigo la comisión vigente
+        // necesito la comision de hoy para calcular el total
         Map<String, Object> comisionRow = compraRepo.comisionVigente()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "No hay una comisión configurada para hoy"));
@@ -40,7 +40,7 @@ public class CompraService {
         Long idComision = ((Number) comisionRow.get("id_comision")).longValue();
         BigDecimal porcentaje = (BigDecimal) comisionRow.get("porcentaje");
 
-        // verifico disponibilidad sector por sector y calculo el subtotal
+        // reviso cupo y precio sector a sector
         BigDecimal subtotal = BigDecimal.ZERO;
         List<Map<String, Object>> sectores = new ArrayList<>();
 
@@ -60,16 +60,14 @@ public class CompraService {
             sectores.add(es);
         }
 
-        // calculo la comisión y el total
         BigDecimal montoComision = subtotal
                 .multiply(porcentaje)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal total = subtotal.add(montoComision);
 
-        // inserto la venta
         Long idVenta = compraRepo.insertarVenta(idUsuario, idComision, porcentaje, subtotal, montoComision, total);
 
-        // inserto una entrada por cada sector pedido
+        // una entrada por cada sector
         for (int i = 0; i < items.size(); i++) {
             BigDecimal precio = (BigDecimal) sectores.get(i).get("precio");
             compraRepo.insertarEntrada(idVenta, items.get(i), idUsuario, precio);

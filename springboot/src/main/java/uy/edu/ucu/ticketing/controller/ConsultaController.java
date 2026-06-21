@@ -32,4 +32,9 @@ public class ConsultaController {
     public List<Map<String, Object>> funcionarios() {
         return service.funcionarios();
     }
+
+    @GetMapping("/paises")
+    public List<Map<String, Object>> paises() {
+        return service.paises();
+    }
 }

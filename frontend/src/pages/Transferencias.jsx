@@ -30,7 +30,7 @@ export default function Transferencias() {
         api.get(`/usuarios/${user.id}/entradas`),
       ])
       setTransferencias(tRes.data)
-      setEntradas(eRes.data.filter(e => e.estado === 'EMITIDA'))
+      setEntradas(eRes.data.filter(e => e.estado === 'EMITIDA' || e.estado === 'TRANSFERIDA'))
     } catch {
       setError('No se pudieron cargar los datos')
     } finally {

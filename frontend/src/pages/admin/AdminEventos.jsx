@@ -201,7 +201,7 @@ export default function AdminEventos() {
                 <option value="">Seleccioná evento...</option>
                 {eventos.filter(ev => ev.estado !== 'CANCELADO').map(ev => (
                   <option key={ev.idEvento} value={ev.idEvento}>
-                    {ev.seleccionLocal} vs {ev.seleccionVisitante} — {ev.estadio}
+                    {ev.local} vs {ev.visitante} — {ev.estadio}
                   </option>
                 ))}
               </select>
@@ -248,7 +248,7 @@ export default function AdminEventos() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-bold text-white text-sm">
-                    {ev.seleccionLocal} vs {ev.seleccionVisitante}
+                    {ev.local} vs {ev.visitante}
                   </span>
                   {ev.estado === 'CANCELADO'
                     ? <span className="badge-red">CANCELADO</span>

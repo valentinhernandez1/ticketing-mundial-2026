@@ -41,14 +41,17 @@ export default function Comprar() {
   const [comprando, setComprando] = useState(false)
   const [success, setSuccess] = useState('')
   const [expanded, setExpanded] = useState({})
+  const [tasaComision, setTasaComision] = useState(5) // porcentaje vigente de la BD
 
   useEffect(() => {
-    api.get('/consulta/eventos')
-      .then(r => {
-        setEventos(r.data)
-        if (r.data.length > 0) setExpanded({ [r.data[0].idEvento]: true })
-      })
-      .catch(() => setError('No se pudieron cargar los eventos'))
+    Promise.all([
+      api.get('/consulta/eventos'),
+      api.get('/comisiones'),
+    ]).then(([evRes, comRes]) => {
+      setEventos(evRes.data)
+      if (evRes.data.length > 0) setExpanded({ [evRes.data[0].idEvento]: true })
+      if (comRes.data.length > 0) setTasaComision(Number(comRes.data[0].porcentaje))
+    }).catch(() => setError('No se pudieron cargar los datos'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -61,7 +64,7 @@ export default function Comprar() {
   const clearCart = () => setCarrito([])
 
   const subtotal = carrito.reduce((s, i) => s + (i.sector.precio || 0), 0)
-  const comision = subtotal * 0.05
+  const comision = subtotal * (tasaComision / 100)
   const total = subtotal + comision
 
   const comprar = async () => {
@@ -208,7 +211,7 @@ export default function Comprar() {
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-right text-xs text-zinc-500 hidden sm:block">
                   <div>Subtotal: <span className="text-zinc-300">{fmt(subtotal)}</span></div>
-                  <div>Comisión (5%): <span className="text-zinc-300">{fmt(comision)}</span></div>
+                  <div>Comisión ({tasaComision}%): <span className="text-zinc-300">{fmt(comision)}</span></div>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-zinc-500">Total</p>

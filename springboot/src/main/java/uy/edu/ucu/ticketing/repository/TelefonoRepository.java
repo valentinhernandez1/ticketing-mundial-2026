@@ -27,7 +27,6 @@ public class TelefonoRepository {
                 Long.class, idUsuario, numero, tipo);
     }
 
-    // returns 1 if deleted, 0 if not found or doesn't belong to user
     public int eliminar(Long idTelefono, Long idUsuario) {
         return jdbc.update(
                 "DELETE FROM telefono WHERE id_telefono = ? AND id_usuario = ?", idTelefono, idUsuario);

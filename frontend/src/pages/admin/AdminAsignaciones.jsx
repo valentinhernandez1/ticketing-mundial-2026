@@ -21,11 +21,14 @@ export default function AdminAsignaciones() {
     }).finally(() => setLoading(false))
   }, [])
 
-  // cuando cambia el evento cargo los sectores habilitados
+  // cuando cambia el evento cargo los sectores del estadio (necesito id_sector, no id_evento_sector)
   useEffect(() => {
     if (!form.idEvento) return setSectores([])
     const ev = eventos.find(e => String(e.idEvento) === String(form.idEvento))
-    setSectores(ev?.sectores || [])
+    if (!ev?.idEstadio) return setSectores([])
+    api.get(`/consulta/estadios/${ev.idEstadio}/sectores`)
+      .then(r => setSectores(r.data))
+      .catch(() => setSectores([]))
   }, [form.idEvento, eventos])
 
   // cargo las asignaciones del evento seleccionado
@@ -106,8 +109,8 @@ export default function AdminAsignaciones() {
               >
                 <option value="">Seleccionar sector...</option>
                 {sectores.map(s => (
-                  <option key={s.idEventoSector} value={s.idEventoSector}>
-                    Sector {s.sector} — ${s.precio}
+                  <option key={s.id} value={s.id}>
+                    Sector {s.nombre}
                   </option>
                 ))}
               </select>

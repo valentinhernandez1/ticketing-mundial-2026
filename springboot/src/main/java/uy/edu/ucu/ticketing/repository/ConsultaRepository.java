@@ -47,6 +47,12 @@ public class ConsultaRepository {
                 """, idEvento);
     }
 
+    // para el dropdown del registro
+    public List<Map<String, Object>> paises() {
+        return jdbc.queryForList(
+                "SELECT id_pais, codigo_iso, nombre FROM pais ORDER BY nombre");
+    }
+
     public List<Map<String, Object>> paisesSede() {
         return jdbc.queryForList("""
                 SELECT p.id_pais, p.nombre FROM pais_sede ps

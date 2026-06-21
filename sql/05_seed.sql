@@ -1,7 +1,11 @@
 -- datos de prueba para poder probar el sistema
 -- ejecutar despues de los scripts 01, 02 y 03
 INSERT INTO pais(codigo_iso,nombre) VALUES
- ('USA','Estados Unidos'),('CAN','Canada'),('MEX','Mexico'),('URY','Uruguay');
+ ('USA','Estados Unidos'),('CAN','Canada'),('MEX','Mexico'),('URY','Uruguay'),
+ ('ARG','Argentina'),('BRA','Brasil'),('ESP','España'),('FRA','Francia'),
+ ('DEU','Alemania'),('ITA','Italia'),('PRT','Portugal'),('GBR','Reino Unido'),
+ ('COL','Colombia'),('CHI','Chile'),('PER','Peru'),('VEN','Venezuela'),
+ ('PAR','Paraguay'),('BOL','Bolivia'),('ECU','Ecuador');
 INSERT INTO pais_sede(id_pais) SELECT id_pais FROM pais WHERE codigo_iso IN ('USA','CAN','MEX');
 
 INSERT INTO seleccion(nombre,codigo_fifa) VALUES

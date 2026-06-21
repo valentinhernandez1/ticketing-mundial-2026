@@ -24,7 +24,7 @@ public class AuthRepository {
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    // inserto dirección → usuario → documento → usuario_general (en ese orden por las FK)
+    // orden importa: direccion → usuario → documento → usuario_general (FK)
     public Long registrarUsuario(String email, String hash, String nombre, String apellido,
                                   Integer dirIdPais, String localidad, String calle,
                                   String numero, String cp,
@@ -58,7 +58,7 @@ public class AuthRepository {
                 """, idUsuario, numero, tipo);
     }
 
-    // busco en las tablas de especialización para saber qué rol tiene
+    // miro las tablas de especialización para saber el rol
     public String getRol(Long idUsuario) {
         Integer esAdmin = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM administrador_pais WHERE id_usuario = ?", Integer.class, idUsuario);

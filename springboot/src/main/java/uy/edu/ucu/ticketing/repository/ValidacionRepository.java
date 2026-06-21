@@ -23,7 +23,7 @@ public class ValidacionRepository {
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    // busco por el código QR (el string hex que muestra el QR)
+    // codigo es el hex del QR, chequeo que este activo y no vencido
     public Optional<Map<String, Object>> findTokenActivoPorCodigo(Long idEntrada, String codigoToken) {
         List<Map<String, Object>> rows = jdbc.queryForList("""
                 SELECT id_token, id_entrada, codigo_token, activo, fecha_expiracion
@@ -58,7 +58,7 @@ public class ValidacionRepository {
                 """, idEntrada, idToken, idFuncionario, idDispositivo, codigoQr, resultado);
     }
 
-    // marco consumida e invalido los tokens activos
+    // esto es irreversible, también invalido los tokens que queden
     public void consumirEntrada(Long idEntrada) {
         jdbc.update("UPDATE entrada SET estado = 'CONSUMIDA' WHERE id_entrada = ?", idEntrada);
         jdbc.update("UPDATE token_qr SET activo = FALSE WHERE id_entrada = ? AND activo = TRUE", idEntrada);

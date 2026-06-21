@@ -1,14 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/client'
 import { UserPlus, AlertCircle, ChevronLeft, Plus, X } from 'lucide-react'
-
-const PAISES = [
-  { id: 1, nombre: 'Estados Unidos' },
-  { id: 2, nombre: 'Canadá' },
-  { id: 3, nombre: 'México' },
-  { id: 4, nombre: 'Uruguay' },
-]
 
 const Field = ({ label, children }) => (
   <div>
@@ -23,6 +17,18 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [telefonos, setTelefonos] = useState([''])
+  const [paises, setPaises] = useState([])
+
+  useEffect(() => {
+    api.get('/consulta/paises')
+      .then(r => setPaises(r.data))
+      .catch(() => setPaises([
+        { id_pais: 1, nombre: 'Estados Unidos' },
+        { id_pais: 2, nombre: 'Canadá' },
+        { id_pais: 3, nombre: 'México' },
+        { id_pais: 4, nombre: 'Uruguay' },
+      ]))
+  }, [])
 
   const [form, setForm] = useState({
     nombre: '',
@@ -163,7 +169,7 @@ export default function Register() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label="País">
                   <select className="input-field" value={form.dirIdPais} onChange={e => set('dirIdPais', e.target.value)} required>
-                    {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    {paises.map(p => <option key={p.id_pais} value={p.id_pais}>{p.nombre}</option>)}
                   </select>
                 </Field>
                 <Field label="Localidad">
@@ -189,7 +195,7 @@ export default function Register() {
               <div className="grid grid-cols-3 gap-3">
                 <Field label="País">
                   <select className="input-field" value={form.docIdPais} onChange={e => set('docIdPais', e.target.value)} required>
-                    {PAISES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    {paises.map(p => <option key={p.id_pais} value={p.id_pais}>{p.nombre}</option>)}
                   </select>
                 </Field>
                 <Field label="Tipo">

@@ -18,7 +18,7 @@ public class AdminRepository {
         this.jdbc = jdbc;
     }
 
-    // país del admin para controlar jurisdicción
+    // necesito el pais del admin para saber si tiene jurisdiccion
     public Optional<Integer> paisDelAdmin(Long idAdmin) {
         List<Map<String, Object>> rows = jdbc.queryForList(
                 "SELECT id_pais FROM administrador_pais WHERE id_usuario = ?", idAdmin);
@@ -32,7 +32,7 @@ public class AdminRepository {
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    // país del evento, lo saco a través del estadio
+    // lo saco via el estadio
     public Optional<Integer> paisDelEvento(Long idEvento) {
         List<Map<String, Object>> rows = jdbc.queryForList("""
                 SELECT est.id_pais
@@ -43,7 +43,7 @@ public class AdminRepository {
                 : Optional.of(((Number) rows.get(0).get("id_pais")).intValue());
     }
 
-    // chequeo que no haya otro evento en el mismo estadio en ese horario
+    // uso tstzrange para detectar solapamiento de horarios
     public boolean hayConflictoDeHorario(Long idEstadio, Timestamp inicio, int duracionMin, Long excluirIdEvento) {
         String sql = """
                 SELECT COUNT(*) FROM evento
@@ -98,7 +98,7 @@ public class AdminRepository {
     }
 
     public void cancelarEvento(Long idEvento) {
-        // al cancelar, el trigger de la DB limpia el periodo para liberar el slot del estadio
+        // el trigger de la BD se encarga de liberar el slot del estadio
         jdbc.update("UPDATE evento SET estado = 'CANCELADO' WHERE id_evento = ?", idEvento);
     }
 }

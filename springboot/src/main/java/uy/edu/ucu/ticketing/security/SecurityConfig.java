@@ -28,6 +28,7 @@ public class SecurityConfig {
                         "/assets/**", "/*.js", "/*.css", "/*.svg", "/*.png",
                         "/app.js", "/styles.css").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/consulta/paises").permitAll()
                 .requestMatchers("/api/compras/**").hasRole("USUARIO_GENERAL")
                 // cualquier usuario autenticado puede recibir o ver transferencias
                 .requestMatchers("/api/transferencias/**").authenticated()
@@ -39,6 +40,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/dispositivos/**").authenticated()
                 .requestMatchers("/api/asignaciones/**").hasRole("ADMINISTRADOR_PAIS")
                 .requestMatchers("/api/consulta/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/comisiones").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/comisiones").hasRole("ADMINISTRADOR_PAIS")
                 .anyRequest().authenticated())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

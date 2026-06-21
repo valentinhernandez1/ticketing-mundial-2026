@@ -34,7 +34,7 @@ public class TransferenciaRepository {
         return count != null && count > 0;
     }
 
-    // bloqueo la entrada y creo la transferencia pendiente
+    // pongo la entrada en TRANSFERIDA para que no la puedan usar mientras
     public Long iniciarTransferencia(Long idEntrada, Long idOrigen, Long idDestino) {
         jdbc.update("UPDATE entrada SET estado = 'TRANSFERIDA' WHERE id_entrada = ?", idEntrada);
         return jdbc.queryForObject("""
@@ -44,7 +44,7 @@ public class TransferenciaRepository {
                 """, Long.class, idEntrada, idOrigen, idDestino);
     }
 
-    // acepto: cambio el titular de la entrada y sumo 1 al contador
+    // el trigger ya incrementa cantidad_transferencias, acá solo cambio el titular
     public void aceptarTransferencia(Long idTransferencia, Long idDestino) {
         Map<String, Object> t = jdbc.queryForMap(
                 "SELECT id_entrada, id_usuario_destino, estado::text FROM transferencia WHERE id_transferencia = ?",
@@ -60,19 +60,12 @@ public class TransferenciaRepository {
 
         Long idEntrada = ((Number) t.get("id_entrada")).longValue();
 
+        // el trigger fn_transferencia_aceptar se encarga de cambiar el titular en entrada
         jdbc.update("""
                 UPDATE transferencia
                 SET estado = 'ACEPTADA', fecha_aceptacion = NOW()
                 WHERE id_transferencia = ?
                 """, idTransferencia);
-
-        // el trigger fn_transferencia_aceptar ya incrementa cantidad_transferencias
-        // nosotros solo cambiamos el titular y el estado
-        jdbc.update("""
-                UPDATE entrada
-                SET id_usuario_actual = ?, estado = 'EMITIDA'
-                WHERE id_entrada = ?
-                """, idDestino, idEntrada);
     }
 
     public void rechazarTransferencia(Long idTransferencia, Long idSolicitante) {
@@ -90,11 +83,11 @@ public class TransferenciaRepository {
         Long idEntrada = ((Number) t.get("id_entrada")).longValue();
 
         jdbc.update("""
-                UPDATE transferencia SET estado = 'RECHAZADA', fecha_aceptacion = NOW()
+                UPDATE transferencia SET estado = 'RECHAZADA'
                 WHERE id_transferencia = ?
                 """, idTransferencia);
 
-        // devuelvo la entrada al estado EMITIDA para que el dueño original pueda usarla
+        // la devuelvo al dueño original
         jdbc.update("UPDATE entrada SET estado = 'EMITIDA' WHERE id_entrada = ?", idEntrada);
     }
 

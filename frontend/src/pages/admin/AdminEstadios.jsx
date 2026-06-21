@@ -60,7 +60,6 @@ export default function AdminEstadios() {
         nombreSector: sectorForm.nombreSector,
         capacidadMaxima: parseInt(sectorForm.capacidadMaxima),
         precioBase: parseFloat(sectorForm.precioBase),
-        precio: parseFloat(sectorForm.precio),
       })
       setSuccess('Sector agregado exitosamente')
       setSectorForm({ idEstadio: '', nombreSector: 'A', capacidadMaxima: '', precioBase: '' })

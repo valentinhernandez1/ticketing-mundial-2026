@@ -46,7 +46,7 @@ public class TokenRepository {
                 """, idUsuario);
     }
 
-    // invalido el token viejo y genero uno nuevo (expira en 35s)
+    // invalido el anterior y creo uno nuevo, expira en 35s
     public Map<String, Object> generarToken(Long idEntrada) {
         jdbc.update("UPDATE token_qr SET activo = FALSE WHERE id_entrada = ? AND activo = TRUE", idEntrada);
 
@@ -58,12 +58,12 @@ public class TokenRepository {
                 VALUES (?, ?, ?, TRUE)
                 """, idEntrada, codigo, expira);
 
-        // el QR codifica "idEntrada:codigo" para que el validador pueda parsearlo
+        // formato "idEntrada:codigo", el validador lo parsea despues
         String qrContent = idEntrada + ":" + codigo;
         return Map.of("codigo", qrContent, "expira", expira.toString());
     }
 
-    // verifico que la entrada le pertenezca al usuario antes de generar el QR
+    // confirmo que la entrada sea del usuario antes de darle el QR
     public Optional<Map<String, Object>> findEntradaDeUsuario(Long idEntrada, Long idUsuario) {
         List<Map<String, Object>> rows = jdbc.queryForList("""
                 SELECT id_entrada, id_usuario_actual, estado::text

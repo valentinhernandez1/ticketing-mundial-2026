@@ -67,4 +67,9 @@ public class ConsultaService {
     public List<Map<String, Object>> funcionarios() {
         return consultaRepo.funcionarios();
     }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> paises() {
+        return consultaRepo.paises();
+    }
 }

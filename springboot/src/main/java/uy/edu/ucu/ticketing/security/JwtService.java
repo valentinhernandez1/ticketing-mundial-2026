@@ -41,7 +41,7 @@ public class JwtService {
         return val == null ? null : val.toString();
     }
 
-    // id del usuario que viene en el claim "uid" del token
+    // el uid lo meto como claim, no es el subject
     public Long getUid(String token) {
         Object uid = parse(token).get("uid");
         return uid == null ? null : ((Number) uid).longValue();

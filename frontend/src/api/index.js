@@ -21,8 +21,8 @@ export const getToken = (id) => api.post(`/entradas/${id}/token`)
 
 // Transferencias
 export const getMisTransferencias = (userId) => api.get(`/usuarios/${userId}/transferencias`)
-export const transferir = (idEntrada, idDestino) =>
-  api.post('/transferencias', { idEntrada, idDestino })
+export const transferir = (idEntrada, emailDestino) =>
+  api.post('/transferencias', { idEntrada, emailDestino })
 export const aceptarTransferencia = (id) => api.post(`/transferencias/${id}/aceptar`)
 export const rechazarTransferencia = (id) => api.post(`/transferencias/${id}/rechazar`)
 

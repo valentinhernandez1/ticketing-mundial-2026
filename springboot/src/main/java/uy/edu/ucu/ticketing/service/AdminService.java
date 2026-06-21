@@ -57,7 +57,7 @@ public class AdminService {
     public Long crearEvento(Long idAdmin, EventoRequest req) {
         verificarJurisdiccionEstadio(idAdmin, req.idEstadio());
 
-        // verifico que no haya conflicto de horario en el estadio
+        // me fijo que el estadio no tenga otro evento en ese horario
         var fechaTs = req.fechaHoraInicio() == null ? null
                 : Timestamp.from(req.fechaHoraInicio().toInstant());
         int duracion = req.duracionMinutos() != null ? req.duracionMinutos() : 120;

@@ -26,7 +26,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             try {
                 String token = header.substring(7);
-                Long   uid = jwt.getUid(token);     // el principal es el id del usuario
+                Long   uid = jwt.getUid(token);     // uso el id como principal, no el email
                 String rol = jwt.getRol(token);
                 var auth = new UsernamePasswordAuthenticationToken(
                         uid, null, List.of(new SimpleGrantedAuthority("ROLE_" + rol)));
