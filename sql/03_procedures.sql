@@ -34,8 +34,8 @@ BEGIN
         INSERT INTO entrada(id_venta, id_evento_sector, precio, estado)
         VALUES (p_id_venta, v_es, NULL, 'EMITIDA');   -- precio lo fija el trigger
     END LOOP;
-
-    UPDATE venta SET estado = 'CONFIRMADA' WHERE id_venta = p_id_venta;
+    -- La venta queda en PENDIENTE; el usuario debe confirmar y luego pagar
+    -- en pasos separados (sp_confirmar_venta -> sp_marcar_venta_paga).
 END;
 $$;
 
@@ -418,6 +418,30 @@ BEGIN
         RAISE EXCEPTION 'El evento % no pertenece a la jurisdiccion del administrador %', p_id_evento, p_id_administrador;
     END IF;
     UPDATE evento SET estado = 'CANCELADO' WHERE id_evento = p_id_evento;
+END;
+$$;
+
+-- CONFIRMAR VENTA (estado PENDIENTE -> CONFIRMADA). Solo el dueno de la venta.
+CREATE OR REPLACE PROCEDURE sp_confirmar_venta(
+    IN p_id_venta   BIGINT,
+    IN p_id_usuario BIGINT
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_estado dom_estado_venta;
+    v_dueno  BIGINT;
+BEGIN
+    SELECT estado, id_usuario INTO v_estado, v_dueno FROM venta WHERE id_venta = p_id_venta;
+    IF v_estado IS NULL THEN
+        RAISE EXCEPTION 'Venta % inexistente', p_id_venta;
+    END IF;
+    IF v_dueno <> p_id_usuario THEN
+        RAISE EXCEPTION 'La venta % no pertenece al usuario %', p_id_venta, p_id_usuario;
+    END IF;
+    IF v_estado <> 'PENDIENTE' THEN
+        RAISE EXCEPTION 'Solo se puede confirmar una venta PENDIENTE (estado actual: %)', v_estado;
+    END IF;
+    UPDATE venta SET estado = 'CONFIRMADA' WHERE id_venta = p_id_venta;
 END;
 $$;
 

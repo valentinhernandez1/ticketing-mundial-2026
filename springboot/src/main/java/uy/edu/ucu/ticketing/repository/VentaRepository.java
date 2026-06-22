@@ -43,15 +43,16 @@ public class VentaRepository {
     }
 
     public List<Map<String, Object>> porUsuario(Long idUsuario) {
-        return jdbc.queryForList("""
-                SELECT v.id_venta          AS "idVenta",
-                       v.fecha             AS "fecha",
-                       v.estado::text      AS "estado",
-                       v.subtotal          AS "subtotal",
+        // Query 1: resumen de ventas
+        List<Map<String, Object>> ventas = jdbc.queryForList("""
+                SELECT v.id_venta            AS "idVenta",
+                       v.fecha               AS "fecha",
+                       v.estado::text        AS "estado",
+                       v.subtotal            AS "subtotal",
                        v.porcentaje_aplicado AS "porcentaje",
-                       v.monto_comision    AS "comision",
-                       v.monto_total       AS "total",
-                       COUNT(e.id_entrada) AS "cantEntradas"
+                       v.monto_comision      AS "comision",
+                       v.monto_total         AS "total",
+                       COUNT(e.id_entrada)   AS "cantEntradas"
                 FROM venta v
                 LEFT JOIN entrada e ON e.id_venta = v.id_venta AND e.estado <> 'ANULADA'
                 WHERE v.id_usuario = ?
@@ -59,5 +60,30 @@ public class VentaRepository {
                          v.porcentaje_aplicado, v.monto_comision, v.monto_total
                 ORDER BY v.fecha DESC
                 """, idUsuario);
+
+        // Query 2: detalle de entradas por venta (evita JSON_AGG → PGobject serialization issue)
+        ventas.forEach(venta -> {
+            Long idVenta = ((Number) venta.get("idVenta")).longValue();
+            List<Map<String, Object>> entradas = jdbc.queryForList("""
+                    SELECT e.id_entrada                   AS "idEntrada",
+                           sl.nombre                     AS "seleccionLocal",
+                           sv.nombre                     AS "seleccionVisitante",
+                           s.nombre_sector::text         AS "nombreSector",
+                           est.nombre                    AS "estadio",
+                           e.estado::text                AS "estado"
+                    FROM entrada       e
+                    JOIN evento_sector es  ON es.id_evento_sector = e.id_evento_sector
+                    JOIN evento        ev  ON ev.id_evento        = es.id_evento
+                    JOIN sector        s   ON s.id_sector         = es.id_sector
+                    JOIN estadio       est ON est.id_estadio      = ev.id_estadio
+                    JOIN seleccion     sl  ON sl.id_seleccion     = ev.id_seleccion_local
+                    JOIN seleccion     sv  ON sv.id_seleccion     = ev.id_seleccion_visitante
+                    WHERE e.id_venta = ? AND e.estado <> 'ANULADA'
+                    ORDER BY e.id_entrada
+                    """, idVenta);
+            venta.put("entradas", entradas);
+        });
+
+        return ventas;
     }
 }

@@ -7,72 +7,90 @@
 * { font-family: 'Inter', system-ui, sans-serif; }
 
 @layer components {
+  /* ── Cards ─────────────────────────────────────────────── */
   .card {
-    @apply bg-zinc-900/80 border border-zinc-700/40 rounded-2xl p-5
-           shadow-xl shadow-black/20 backdrop-blur-sm
-           hover:border-zinc-600/50 transition-all duration-200;
+    @apply bg-zinc-900 border border-zinc-800/60 rounded-2xl p-5;
   }
 
+  /* ── Buttons ────────────────────────────────────────────── */
   .btn-primary {
-    @apply bg-gradient-to-r from-emerald-500 to-green-400 text-zinc-950
-           font-bold px-4 py-2.5 rounded-xl cursor-pointer border-0
-           hover:from-emerald-400 hover:to-green-300
-           hover:shadow-lg hover:shadow-emerald-500/25
-           active:scale-95 transition-all duration-150 text-sm font-sans
+    @apply bg-emerald-500 hover:bg-emerald-400 text-zinc-950
+           font-semibold px-4 py-2.5 rounded-xl cursor-pointer border-0
+           active:scale-[0.97] transition-all duration-150 text-sm font-sans
            inline-flex items-center justify-center gap-1.5;
   }
 
   .btn-secondary {
-    @apply bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold
-           px-4 py-2.5 rounded-xl border border-zinc-700 hover:border-zinc-600
-           active:scale-95 transition-all duration-150 cursor-pointer text-sm font-sans
+    @apply bg-transparent hover:bg-zinc-800 text-zinc-300 font-medium
+           px-4 py-2.5 rounded-xl border border-zinc-700/60 hover:border-zinc-600
+           active:scale-[0.97] transition-all duration-150 cursor-pointer text-sm font-sans
            inline-flex items-center justify-center gap-1.5;
   }
 
   .btn-ghost {
-    @apply text-zinc-400 hover:text-white hover:bg-zinc-800/70
+    @apply text-zinc-400 hover:text-white hover:bg-zinc-800/60
            px-3 py-1.5 rounded-lg transition-all duration-150
            cursor-pointer text-sm font-medium font-sans;
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-500 text-white font-bold
-           px-4 py-2.5 rounded-xl active:scale-95
-           transition-all duration-150 cursor-pointer text-sm font-sans
+    @apply bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold
+           border border-red-500/20 hover:border-red-500/40
+           px-4 py-2.5 rounded-xl
+           active:scale-[0.97] transition-all duration-150 cursor-pointer text-sm font-sans
            inline-flex items-center justify-center gap-1.5;
   }
 
+  /* ── Inputs ─────────────────────────────────────────────── */
   .input-field {
-    @apply w-full bg-zinc-900 border border-zinc-700 rounded-xl
-           px-4 py-3 text-white placeholder-zinc-500 text-sm
-           focus:outline-none focus:border-emerald-500
-           focus:ring-2 focus:ring-emerald-500/20
+    @apply w-full bg-zinc-800/60 border border-zinc-700/60 rounded-xl
+           px-4 py-2.5 text-white placeholder-zinc-600 text-sm
+           focus:outline-none focus:border-emerald-500/60
+           focus:ring-1 focus:ring-emerald-500/20
            transition-all duration-150;
   }
 
-  .badge-green  { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25; }
-  .badge-yellow { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25; }
-  .badge-red    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/25; }
-  .badge-blue   { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/25; }
-  .badge-zinc   { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-700/80 text-zinc-300 border border-zinc-600; }
+  /* ── Badges ─────────────────────────────────────────────── */
+  .badge-green  { @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20; }
+  .badge-yellow { @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/10  text-amber-400  border border-amber-500/20;  }
+  .badge-red    { @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-red-500/10    text-red-400    border border-red-500/20;    }
+  .badge-blue   { @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-500/10   text-blue-400   border border-blue-500/20;   }
+  .badge-zinc   { @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-zinc-800      text-zinc-400   border border-zinc-700/80;   }
+
+  /* ── Alerts ─────────────────────────────────────────────── */
+  .alert-error   { @apply flex items-center gap-3 bg-red-500/10     border border-red-500/20     rounded-xl px-4 py-3; }
+  .alert-success { @apply flex items-center gap-3 bg-emerald-500/10  border border-emerald-500/20  rounded-xl px-4 py-3; }
+
+  /* ── Page header ─────────────────────────────────────────── */
+  .page-header { @apply mb-6; }
+  .page-header-icon {
+    @apply w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700/60
+           flex items-center justify-center text-emerald-400 shrink-0;
+  }
+
+  /* ── Lists & empty states ────────────────────────────────── */
+  .empty-state { @apply flex flex-col items-center text-center py-16; }
+  .list-row    { @apply bg-zinc-900 border border-zinc-800/60 rounded-xl px-4 py-4; }
 }
 
+/* ── Body ────────────────────────────────────────────────── */
 body {
   background-color: #09090b;
   color: #fafafa;
   min-height: 100vh;
   background-image:
-    radial-gradient(ellipse at 15% 0%, rgba(16,185,129,0.08) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 100%, rgba(59,130,246,0.05) 0%, transparent 50%);
+    radial-gradient(ellipse at 15% 0%, rgba(16,185,129,0.05) 0%, transparent 55%);
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #09090b; }
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #10b981; }
-::selection { background: rgba(16,185,129,0.3); }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+::selection { background: rgba(16,185,129,0.25); }
 
+/* ── QR reader overrides ─────────────────────────────────── */
 #qr-reader { border: none !important; padding: 0 !important; }
 #qr-reader video { border-radius: 0 !important; }
 #qr-reader__scan_region { background: transparent !important; }
-#qr-reader__dashboard { display: none !important; }
+#qr-reader__dashboard   { display: none !important; }

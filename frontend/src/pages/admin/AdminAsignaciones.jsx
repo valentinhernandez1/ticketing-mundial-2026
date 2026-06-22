@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { UserCheck, Plus } from 'lucide-react'
+import { UserCheck, Plus, Trash2 } from 'lucide-react'
 import api from '../../api/client'
+import Alert from '../../components/ui/Alert'
+import PageHeader from '../../components/ui/PageHeader'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
 
 export default function AdminAsignaciones() {
   const [eventos, setEventos] = useState([])
@@ -9,7 +12,9 @@ export default function AdminAsignaciones() {
   const [form, setForm] = useState({ idEvento: '', idFuncionario: '', idSector: '' })
   const [sectores, setSectores] = useState([])
   const [loading, setLoading] = useState(true)
-  const [msg, setMsg] = useState({ text: '', ok: true })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [eliminando, setEliminando] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -21,7 +26,6 @@ export default function AdminAsignaciones() {
     }).finally(() => setLoading(false))
   }, [])
 
-  // cuando cambia el evento cargo los sectores del estadio (necesito id_sector, no id_evento_sector)
   useEffect(() => {
     if (!form.idEvento) return setSectores([])
     const ev = eventos.find(e => String(e.idEvento) === String(form.idEvento))
@@ -31,60 +35,75 @@ export default function AdminAsignaciones() {
       .catch(() => setSectores([]))
   }, [form.idEvento, eventos])
 
-  // cargo las asignaciones del evento seleccionado
+  const cargarAsignaciones = async (idEvento) => {
+    if (!idEvento) return setAsignaciones([])
+    const r = await api.get(`/asignaciones/evento/${idEvento}`)
+    setAsignaciones(r.data)
+  }
+
   useEffect(() => {
-    if (!form.idEvento) return setAsignaciones([])
-    api.get(`/asignaciones/evento/${form.idEvento}`)
-      .then(r => setAsignaciones(r.data))
-      .catch(() => setAsignaciones([]))
+    cargarAsignaciones(form.idEvento).catch(() => setAsignaciones([]))
   }, [form.idEvento])
 
   const asignar = async (e) => {
     e.preventDefault()
+    setError('')
+    setSuccess('')
     try {
       await api.post('/asignaciones', {
         idFuncionario: Number(form.idFuncionario),
         idEvento: Number(form.idEvento),
         idSector: Number(form.idSector),
       })
-      setMsg({ text: 'Funcionario asignado al sector', ok: true })
+      setSuccess('Funcionario asignado al sector')
       setForm(f => ({ ...f, idFuncionario: '', idSector: '' }))
-      const r = await api.get(`/asignaciones/evento/${form.idEvento}`)
-      setAsignaciones(r.data)
+      await cargarAsignaciones(form.idEvento)
     } catch (err) {
-      setMsg({ text: err.response?.data?.detalle || 'Error al asignar', ok: false })
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al asignar')
     }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-    </div>
-  )
+  const eliminar = async (idAsignacion, nombre, sector) => {
+    if (!window.confirm(`¿Eliminar la asignación de ${nombre} en el Sector ${sector}?`)) return
+    setError('')
+    setSuccess('')
+    setEliminando(idAsignacion)
+    try {
+      await api.delete(`/asignaciones/${idAsignacion}`)
+      setSuccess('Asignación eliminada')
+      await cargarAsignaciones(form.idEvento)
+    } catch (err) {
+      setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al eliminar la asignación')
+    } finally {
+      setEliminando(null)
+    }
+  }
+
+  if (loading) return <LoadingSpinner />
 
   return (
-    <div>
-      <h1 className="text-2xl font-black text-white mb-1">Asignación de funcionarios</h1>
-      <p className="text-zinc-500 text-sm mb-6">Asigná funcionarios a los sectores de cada evento</p>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={UserCheck}
+        title="Asignación de funcionarios"
+        subtitle="Asigná funcionarios a los sectores de cada evento"
+      />
 
-      {msg.text && (
-        <div className={`rounded-lg px-4 py-3 mb-4 text-sm ${msg.ok
-          ? 'bg-green-900/30 border border-green-800/50 text-green-400'
-          : 'bg-red-900/30 border border-red-800/50 text-red-400'}`}>
-          {msg.text}
-        </div>
-      )}
+      <Alert type="error"   message={error}   />
+      <Alert type="success" message={success} />
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <h2 className="font-bold text-white mb-4 flex items-center gap-2">
-            <Plus size={16} /> Nueva asignación
+        {/* Formulario */}
+        <div className="card">
+          <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <Plus size={15} className="text-emerald-400" />
+            Nueva asignación
           </h2>
-          <form onSubmit={asignar} className="space-y-3">
+          <form onSubmit={asignar} className="flex flex-col gap-3">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Evento</label>
+              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Evento</label>
               <select
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
+                className="input-field"
                 value={form.idEvento}
                 onChange={e => setForm(f => ({ ...f, idEvento: e.target.value, idSector: '' }))}
                 required
@@ -97,11 +116,10 @@ export default function AdminAsignaciones() {
                 ))}
               </select>
             </div>
-
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Sector</label>
+              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Sector</label>
               <select
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
+                className="input-field"
                 value={form.idSector}
                 onChange={e => setForm(f => ({ ...f, idSector: e.target.value }))}
                 required
@@ -109,17 +127,14 @@ export default function AdminAsignaciones() {
               >
                 <option value="">Seleccionar sector...</option>
                 {sectores.map(s => (
-                  <option key={s.id} value={s.id}>
-                    Sector {s.nombre}
-                  </option>
+                  <option key={s.id} value={s.id}>Sector {s.nombre}</option>
                 ))}
               </select>
             </div>
-
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Funcionario</label>
+              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Funcionario</label>
               <select
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
+                className="input-field"
                 value={form.idFuncionario}
                 onChange={e => setForm(f => ({ ...f, idFuncionario: e.target.value }))}
                 required
@@ -132,34 +147,53 @@ export default function AdminAsignaciones() {
                 ))}
               </select>
             </div>
-
-            <button type="submit" className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg transition-all text-sm">
+            <button type="submit" className="btn-primary self-start">
+              <Plus size={14} />
               Asignar
             </button>
           </form>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <h2 className="font-bold text-white mb-4 flex items-center gap-2">
-            <UserCheck size={16} /> Asignaciones del evento
+        {/* Asignaciones del evento */}
+        <div className="card">
+          <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <UserCheck size={15} className="text-zinc-400" />
+            Asignaciones del evento
           </h2>
           {!form.idEvento ? (
-            <p className="text-zinc-500 text-sm">Seleccioná un evento para ver sus asignaciones</p>
+            <p className="text-zinc-600 text-sm">Seleccioná un evento para ver sus asignaciones</p>
           ) : asignaciones.length === 0 ? (
-            <p className="text-zinc-500 text-sm">No hay funcionarios asignados todavía</p>
+            <p className="text-zinc-600 text-sm">Sin funcionarios asignados todavía</p>
           ) : (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {asignaciones.map(a => (
-                <div key={a.id_asignacion} className="bg-zinc-800 rounded-lg p-3 flex justify-between items-center">
-                  <div>
-                    <div className="text-white text-sm font-medium">
+                <div
+                  key={a.id_asignacion}
+                  className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-3 flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-white text-sm font-medium truncate">
                       {a.funcionario_nombre} {a.funcionario_apellido}
-                    </div>
-                    <div className="text-zinc-400 text-xs">Legajo: {a.numero_legajo}</div>
+                    </p>
+                    <p className="text-zinc-500 text-xs mt-0.5">Legajo: {a.numero_legajo}</p>
                   </div>
-                  <span className="bg-blue-900/40 text-blue-400 border border-blue-800/50 text-xs px-2 py-0.5 rounded-full font-medium">
-                    Sector {a.sector}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="badge-blue">Sector {a.sector}</span>
+                    <button
+                      onClick={() => eliminar(
+                        a.id_asignacion,
+                        `${a.funcionario_nombre} ${a.funcionario_apellido}`,
+                        a.sector
+                      )}
+                      disabled={eliminando === a.id_asignacion}
+                      className="btn-danger text-xs px-2 py-1.5 disabled:opacity-50"
+                      title="Eliminar asignación"
+                    >
+                      {eliminando === a.id_asignacion
+                        ? <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                        : <Trash2 size={13} />}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

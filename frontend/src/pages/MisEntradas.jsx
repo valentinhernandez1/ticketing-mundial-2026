@@ -83,7 +83,7 @@ export default function MisEntradas() {
           return (
             <div
               key={entrada.idEntrada}
-              className={`list-item border-l-4 ${borderColor} flex items-center gap-4`}
+              className={`list-row border-l-4 ${borderColor} flex items-center gap-4`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">

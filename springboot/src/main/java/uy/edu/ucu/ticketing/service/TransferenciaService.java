@@ -34,6 +34,8 @@ public class TransferenciaService {
         String estado = (String) entrada.get("estado");
         if ("CONSUMIDA".equals(estado))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede transferir una entrada ya consumida");
+        if ("ANULADA".equals(estado))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede transferir una entrada anulada");
 
         int transferencias = ((Number) entrada.get("cantidad_transferencias")).intValue();
         if (transferencias >= 3)
@@ -42,7 +44,6 @@ public class TransferenciaService {
         if (transferenciaRepo.tienePendiente(req.idEntrada()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya hay una transferencia pendiente para esta entrada");
 
-        // busco al destinatario por email
         Map<String, Object> destino = usuarioRepo.findByEmail(req.emailDestino())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No existe un usuario con el email: " + req.emailDestino()));
@@ -56,12 +57,35 @@ public class TransferenciaService {
 
     @Transactional
     public void aceptar(Long idTransferencia, Long idSolicitante) {
-        transferenciaRepo.aceptarTransferencia(idTransferencia, idSolicitante);
+        Map<String, Object> t = transferenciaRepo.findById(idTransferencia)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transferencia no encontrada"));
+
+        Long destino = ((Number) t.get("id_usuario_destino")).longValue();
+        if (!destino.equals(idSolicitante))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el destinatario puede aceptar la transferencia");
+
+        if (!"PENDIENTE".equals(t.get("estado")))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La transferencia ya fue " + t.get("estado"));
+
+        transferenciaRepo.marcarAceptada(idTransferencia);
     }
 
     @Transactional
     public void rechazar(Long idTransferencia, Long idSolicitante) {
-        transferenciaRepo.rechazarTransferencia(idTransferencia, idSolicitante);
+        Map<String, Object> t = transferenciaRepo.findById(idTransferencia)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transferencia no encontrada"));
+
+        Long destino = ((Number) t.get("id_usuario_destino")).longValue();
+        if (!destino.equals(idSolicitante))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el destinatario puede rechazar la transferencia");
+
+        if (!"PENDIENTE".equals(t.get("estado")))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La transferencia ya fue " + t.get("estado"));
+
+        Long idEntrada = ((Number) t.get("id_entrada")).longValue();
+        transferenciaRepo.marcarRechazada(idTransferencia, idEntrada);
     }
 
     @Transactional(readOnly = true)

@@ -140,13 +140,32 @@ CREATE TRIGGER trg_evento_no_superpuesto
     BEFORE INSERT OR UPDATE ON evento
     FOR EACH ROW EXECUTE FUNCTION fn_evento_no_superpuesto();
 
--- Al cancelar un evento, libera su franja temporal en el indice EXCLUDE.
--- NULL no participa en el indice GiST, asi que el slot queda libre.
+-- Al cancelar un evento:
+--   1. Libera la franja temporal (NULL no participa en el indice GiST).
+--   2. Anula las entradas no consumidas (estado EMITIDA o TRANSFERIDA).
+--   3. Desactiva los tokens QR activos de esas entradas.
 CREATE OR REPLACE FUNCTION fn_evento_cancelar()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
     IF TG_OP = 'UPDATE' AND NEW.estado = 'CANCELADO' AND OLD.estado <> 'CANCELADO' THEN
         NEW.periodo := NULL;
+
+        -- Anular entradas no consumidas del evento cancelado
+        UPDATE entrada SET estado = 'ANULADA'
+         WHERE id_evento_sector IN (
+                 SELECT id_evento_sector FROM evento_sector WHERE id_evento = NEW.id_evento
+               )
+           AND estado NOT IN ('CONSUMIDA', 'ANULADA');
+
+        -- Desactivar tokens QR de las entradas anuladas
+        UPDATE token_qr SET activo = FALSE
+         WHERE id_entrada IN (
+                 SELECT e.id_entrada
+                   FROM entrada e
+                   JOIN evento_sector es ON es.id_evento_sector = e.id_evento_sector
+                  WHERE es.id_evento = NEW.id_evento
+               )
+           AND activo = TRUE;
     END IF;
     RETURN NEW;
 END;
@@ -197,7 +216,10 @@ CREATE TRIGGER trg_transferencia_before
     BEFORE INSERT ON transferencia
     FOR EACH ROW EXECUTE FUNCTION fn_transferencia_before();
 
--- Al aceptar: cambia titular, marca entrada TRANSFERIDA e incrementa contador
+-- Al aceptar: cambia titular, restaura estado a EMITIDA e incrementa contador.
+-- BUG FIX: estaba en 'TRANSFERIDA' — el nuevo titular no podía usar el QR.
+-- El estado 'TRANSFERIDA' solo aplica mientras la transferencia está PENDIENTE.
+-- Una vez aceptada, la entrada pasa a 'EMITIDA' para el nuevo titular.
 CREATE OR REPLACE FUNCTION fn_transferencia_aceptar()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -207,7 +229,7 @@ BEGIN
         END IF;
         UPDATE entrada
            SET id_usuario_actual = NEW.id_usuario_destino,
-               estado = 'TRANSFERIDA',
+               estado = 'EMITIDA',
                cantidad_transferencias = cantidad_transferencias + 1
          WHERE id_entrada = NEW.id_entrada;
     END IF;
@@ -262,7 +284,7 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- Entrada no consumida
+    -- Entrada disponible (ni consumida, ni anulada, ni en transferencia pendiente)
     SELECT estado, id_evento_sector INTO v_estado, v_es
       FROM entrada WHERE id_entrada = NEW.id_entrada FOR UPDATE;
     IF v_estado IS NULL THEN
@@ -270,6 +292,13 @@ BEGIN
     END IF;
     IF v_estado = 'CONSUMIDA' THEN
         RAISE EXCEPTION 'La entrada % ya fue consumida', NEW.id_entrada;
+    END IF;
+    IF v_estado = 'ANULADA' THEN
+        RAISE EXCEPTION 'La entrada % fue anulada (el evento fue cancelado)', NEW.id_entrada;
+    END IF;
+    -- BUG FIX: bloquear validación mientras hay una transferencia pendiente
+    IF v_estado = 'TRANSFERIDA' THEN
+        RAISE EXCEPTION 'La entrada % tiene una transferencia pendiente y no puede validarse', NEW.id_entrada;
     END IF;
 
     -- Token debe pertenecer a la entrada, estar activo y vigente

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import api from '../../api/client'
-import { Trophy, BarChart2, Building2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Trophy, BarChart2, Building2, RefreshCw } from 'lucide-react'
+import Alert from '../../components/ui/Alert'
+import PageHeader from '../../components/ui/PageHeader'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
@@ -57,11 +60,7 @@ export default function AdminReportes() {
 
   useEffect(() => { cargar() }, [])
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <LoadingSpinner />
 
   // Field names come from the SQL functions (snake_case, passed through as-is by JdbcTemplate)
   const getVal = (row, keys) => {
@@ -75,22 +74,18 @@ export default function AdminReportes() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-white">Reportes</h1>
-          <p className="text-zinc-500 text-sm mt-1">Estadísticas del sistema de ticketing</p>
-        </div>
-        <button onClick={cargar} className="btn-secondary flex items-center gap-2 text-sm">
-          <RefreshCw size={14} /> Actualizar
-        </button>
-      </div>
+      <PageHeader
+        icon={BarChart2}
+        title="Reportes"
+        subtitle="Estadísticas del sistema de ticketing"
+        action={
+          <button onClick={cargar} className="btn-secondary flex items-center gap-2 text-sm">
+            <RefreshCw size={14} /> Actualizar
+          </button>
+        }
+      />
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-lg px-4 py-3">
-          <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <span className="text-red-400 text-sm">{error}</span>
-        </div>
-      )}
+      <Alert type="error" message={error} />
 
       {/* Ranking compradores */}
       <Section title="Ranking de compradores" icon={Trophy} color="text-yellow-400">

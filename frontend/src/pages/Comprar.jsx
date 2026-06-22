@@ -7,30 +7,37 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 import { ShoppingCart, Trash2, Ticket, ChevronDown, ChevronUp, ShoppingBag } from 'lucide-react'
 
-const SECTOR_STYLES = {
-  A: { bg: 'bg-yellow-950/40', border: 'border-yellow-800/40', text: 'text-yellow-400', btn: 'bg-yellow-600 hover:bg-yellow-500 text-black font-bold', label: 'Sector A — VIP' },
-  B: { bg: 'bg-blue-950/40', border: 'border-blue-800/40', text: 'text-blue-400', btn: 'bg-blue-600 hover:bg-blue-500 text-white font-bold', label: 'Sector B — Platea' },
-  C: { bg: 'bg-violet-950/40', border: 'border-violet-800/40', text: 'text-violet-400', btn: 'bg-violet-600 hover:bg-violet-500 text-white font-bold', label: 'Sector C — Popular' },
-  D: { bg: 'bg-green-950/40', border: 'border-green-800/40', text: 'text-green-400', btn: 'bg-green-600 hover:bg-green-500 text-white font-bold', label: 'Sector D — General' },
+const SECTOR_META = {
+  A: { accent: 'text-amber-400',   label: 'VIP'     },
+  B: { accent: 'text-sky-400',     label: 'Platea'  },
+  C: { accent: 'text-violet-400',  label: 'Popular' },
+  D: { accent: 'text-emerald-400', label: 'General' },
 }
 
 function SectorCard({ sector, onAdd }) {
-  const s = SECTOR_STYLES[sector.sector] || SECTOR_STYLES.D
+  const m = SECTOR_META[sector.sector] || SECTOR_META.D
+  const disponibles = sector.disponibles ?? 0
+  const soldOut = disponibles === 0
+
   return (
-    <div className={`${s.bg} border ${s.border} rounded-xl p-4 flex flex-col gap-3`}>
+    <div className={`bg-zinc-800/40 border border-zinc-700/50 rounded-xl p-4 flex flex-col gap-3 transition-opacity ${soldOut ? 'opacity-40' : ''}`}>
       <div>
-        <p className={`text-xs font-bold uppercase tracking-widest ${s.text}`}>{s.label}</p>
-        <p className={`text-2xl font-black mt-1 ${s.text}`}>
+        <p className={`text-[10px] font-bold uppercase tracking-widest ${m.accent}`}>
+          {sector.sector} · {m.label}
+        </p>
+        <p className="text-xl font-black text-white mt-2">
           ${sector.precio?.toLocaleString('es-UY', { minimumFractionDigits: 0 })}
         </p>
-        <p className="text-xs text-zinc-500 mt-0.5">{sector.disponibles ?? '?'} disponibles</p>
+        <p className="text-xs text-zinc-600 mt-0.5">
+          {soldOut ? 'Sin disponibilidad' : `${disponibles} disponibles`}
+        </p>
       </div>
       <button
         onClick={() => onAdd(sector)}
-        className={`${s.btn} px-3 py-1.5 rounded-lg text-sm transition-all active:scale-95 disabled:opacity-40`}
-        disabled={sector.disponibles === 0}
+        disabled={soldOut}
+        className="w-full py-1.5 rounded-lg text-xs font-semibold border border-zinc-600/50 text-zinc-300 hover:bg-zinc-700/50 hover:border-zinc-500/70 transition-all active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed"
       >
-        + Agregar
+        {soldOut ? 'Agotado' : '+ Agregar'}
       </button>
     </div>
   )
@@ -79,7 +86,7 @@ export default function Comprar() {
     try {
       const eventoSectores = carrito.map(i => i.sector.idEventoSector)
       await api.post('/compras', { eventoSectores })
-      setSuccess('¡Compra realizada! Redirigiendo a tus compras...')
+      setSuccess('¡Compra realizada! Redirigiendo...')
       setCarrito([])
       setTimeout(() => navigate('/mis-compras'), 1500)
     } catch (err) {
@@ -90,23 +97,22 @@ export default function Comprar() {
   }
 
   const toggleEvento = (id) => setExpanded(e => ({ ...e, [id]: !e[id] }))
-
   const fmt = (n) => `$${(n || 0).toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   if (loading) return <LoadingSpinner />
 
   return (
-    <div className={carrito.length > 0 ? 'pb-52 md:pb-48' : 'pb-4'}>
+    <div className={carrito.length > 0 ? 'pb-52 md:pb-44' : 'pb-4'}>
       <PageHeader
         icon={ShoppingBag}
         title="Comprar entradas"
         subtitle="Seleccioná los sectores para los partidos que querés ver"
       />
 
-      <Alert type="error" message={error} className="mb-4" />
+      <Alert type="error"   message={error}   className="mb-4" />
       <Alert type="success" message={success} className="mb-4" />
 
-      {eventos.length === 0 && !loading && (
+      {eventos.length === 0 && (
         <EmptyState
           emoji="⚽"
           title="No hay eventos disponibles por el momento"
@@ -114,54 +120,47 @@ export default function Comprar() {
         />
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {eventos.map(ev => (
-          <div key={ev.idEvento} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-            {/* Match header */}
-            <button
-              className="w-full text-left"
-              onClick={() => toggleEvento(ev.idEvento)}
-            >
-              <div className="bg-gradient-to-r from-zinc-900 via-zinc-800/80 to-zinc-900 px-6 py-5 flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <p className="text-xl font-black text-white">{ev.local || 'Local'}</p>
-                      <p className="text-xs text-zinc-500">{ev.paisLocal || ''}</p>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-zinc-600 font-black text-lg">VS</span>
-                      <span className="text-xs text-green-500 font-bold mt-0.5">⚽</span>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-black text-white">{ev.visitante || 'Visitante'}</p>
-                      <p className="text-xs text-zinc-500">{ev.paisVisitante || ''}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mt-3">
-                    <span className="text-xs text-zinc-500">🏟️ {ev.estadio || 'Estadio'}</span>
-                    <span className="text-zinc-700">·</span>
-                    <span className="text-xs text-zinc-500">
-                      {ev.fecha ? new Date(ev.fecha).toLocaleString('es-UY', {
-                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                      }) : '—'}
-                    </span>
-                    {ev.estado && ev.estado !== 'ACTIVO' && (
-                      <span className="badge-red">{ev.estado}</span>
+          <div key={ev.idEvento} className="bg-zinc-900 border border-zinc-800/60 rounded-2xl overflow-hidden">
+            {/* Encabezado del partido */}
+            <button className="w-full text-left" onClick={() => toggleEvento(ev.idEvento)}>
+              <div className="px-5 py-4 flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  {/* Equipos */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-base font-black text-white truncate">{ev.local || 'Local'}</span>
+                    <span className="text-xs font-bold text-zinc-600 shrink-0">VS</span>
+                    <span className="text-base font-black text-white truncate">{ev.visitante || 'Visitante'}</span>
+                    {ev.estado && ev.estado !== 'PROGRAMADO' && (
+                      <span className={`shrink-0 ${ev.estado === 'CANCELADO' ? 'badge-red' : 'badge-zinc'}`}>
+                        {ev.estado}
+                      </span>
                     )}
                   </div>
+                  {/* Meta */}
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className="text-xs text-zinc-600">🏟 {ev.estadio || 'Estadio'}</span>
+                    <span className="text-zinc-800">·</span>
+                    <span className="text-xs text-zinc-600">
+                      {ev.fecha ? new Date(ev.fecha).toLocaleString('es-UY', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      }) : '—'}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-zinc-600 ml-4">
-                  {expanded[ev.idEvento] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                <div className="text-zinc-700 ml-4 shrink-0">
+                  {expanded[ev.idEvento] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
               </div>
             </button>
 
             {/* Sectores */}
             {expanded[ev.idEvento] && (
-              <div className="px-6 pb-6">
+              <div className="px-5 pb-5 border-t border-zinc-800/40 pt-4">
                 {ev.sectores && ev.sectores.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-1">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                     {ev.sectores.map(sec => (
                       <SectorCard
                         key={sec.idEventoSector}
@@ -171,7 +170,7 @@ export default function Comprar() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-zinc-600 text-sm py-4">No hay sectores habilitados para este evento</p>
+                  <p className="text-zinc-700 text-sm py-2">Sin sectores habilitados</p>
                 )}
               </div>
             )}
@@ -181,51 +180,53 @@ export default function Comprar() {
 
       {/* Carrito sticky */}
       {carrito.length > 0 && (
-        <div className="fixed bottom-16 md:bottom-0 inset-x-0 z-40 p-4">
-          <div className="max-w-5xl mx-auto bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl shadow-black/70 p-4">
-            <div className="flex items-start gap-4">
-              {/* Items */}
-              <div className="flex-1 flex flex-wrap gap-2">
+        <div className="fixed bottom-16 md:bottom-0 inset-x-0 z-40 p-3 md:p-4">
+          <div className="max-w-5xl mx-auto bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl shadow-black/60 p-3.5">
+            <div className="flex items-start gap-3">
+              {/* Chips */}
+              <div className="flex-1 flex flex-wrap gap-1.5 min-w-0">
                 {carrito.map(item => (
-                  <div key={item.key} className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs">
-                    <Ticket size={12} className="text-green-400" />
-                    <span className="text-zinc-300 font-medium">{item.evento.local} vs {item.evento.visitante}</span>
-                    <span className="text-zinc-500">· Sector {item.sector.sector}</span>
-                    <button onClick={() => removeFromCart(item.key)} className="text-zinc-600 hover:text-red-400 ml-1 transition-colors">
+                  <div key={item.key} className="flex items-center gap-1.5 bg-zinc-800/80 border border-zinc-700/50 rounded-lg px-2.5 py-1.5 text-xs">
+                    <Ticket size={11} className="text-emerald-400 shrink-0" />
+                    <span className="text-zinc-300 font-medium truncate max-w-[120px]">
+                      {item.evento.local} vs {item.evento.visitante}
+                    </span>
+                    <span className="text-zinc-600">· {item.sector.sector}</span>
+                    <button
+                      onClick={() => removeFromCart(item.key)}
+                      className="text-zinc-700 hover:text-red-400 ml-0.5 transition-colors leading-none"
+                    >
                       ×
                     </button>
                   </div>
                 ))}
                 {carrito.length >= 5 && (
-                  <span className="text-xs text-yellow-500 font-medium self-center">Máximo 5 entradas</span>
+                  <span className="text-xs text-amber-500 font-medium self-center">Máx. 5 entradas</span>
                 )}
               </div>
 
-              {/* Totales + botones */}
-              <div className="flex items-center gap-4 shrink-0">
-                <div className="text-right text-xs text-zinc-500 hidden sm:block">
-                  <div>Subtotal: <span className="text-zinc-300">{fmt(subtotal)}</span></div>
-                  <div>Comisión ({tasaComision}%): <span className="text-zinc-300">{fmt(comision)}</span></div>
+              {/* Total + acciones */}
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right hidden sm:block">
+                  <p className="text-[11px] text-zinc-600">Subtotal: <span className="text-zinc-400">{fmt(subtotal)}</span></p>
+                  <p className="text-[11px] text-zinc-600">Comisión ({tasaComision}%): <span className="text-zinc-400">{fmt(comision)}</span></p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-zinc-500">Total</p>
-                  <p className="text-xl font-black text-white">{fmt(total)}</p>
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-wider">Total</p>
+                  <p className="text-lg font-black text-white">{fmt(total)}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={clearCart} className="btn-secondary flex items-center gap-1.5 text-sm">
-                    <Trash2 size={14} />
-                    Vaciar
+                  <button onClick={clearCart} className="btn-secondary text-xs py-2 px-3">
+                    <Trash2 size={13} />
                   </button>
                   <button
                     onClick={comprar}
                     disabled={comprando}
-                    className="btn-primary flex items-center gap-1.5 text-sm disabled:opacity-60"
+                    className="btn-primary text-xs py-2 px-3 disabled:opacity-50"
                   >
-                    {comprando ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <ShoppingCart size={14} />
-                    )}
+                    {comprando
+                      ? <div className="w-3.5 h-3.5 border-2 border-zinc-950/30 border-t-zinc-950 rounded-full animate-spin" />
+                      : <ShoppingCart size={13} />}
                     Comprar ({carrito.length})
                   </button>
                 </div>
