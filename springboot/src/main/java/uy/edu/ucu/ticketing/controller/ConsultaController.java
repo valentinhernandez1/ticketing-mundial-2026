@@ -1,5 +1,6 @@
 package uy.edu.ucu.ticketing.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uy.edu.ucu.ticketing.dto.ConsultaDtos.*;
 import uy.edu.ucu.ticketing.service.ConsultaService;
@@ -29,12 +30,9 @@ public class ConsultaController {
     }
 
     @GetMapping("/funcionarios")
+    @PreAuthorize("hasRole('ADMINISTRADOR_PAIS')")
     public List<Map<String, Object>> funcionarios() {
         return service.funcionarios();
     }
 
-    @GetMapping("/paises")
-    public List<Map<String, Object>> paises() {
-        return service.paises();
-    }
 }

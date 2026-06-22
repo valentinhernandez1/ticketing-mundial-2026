@@ -1,6 +1,31 @@
 import { useState, useEffect } from 'react'
 import api from '../../api/client'
-import { Calendar, Plus, XCircle, AlertCircle, CheckCircle, Layers } from 'lucide-react'
+import { Calendar, Plus, XCircle, AlertCircle, CheckCircle, Layers, X } from 'lucide-react'
+
+function ConfirmDialog({ title, message, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="text-base font-bold text-white">{title}</h3>
+          <button onClick={onCancel} className="text-zinc-600 hover:text-zinc-300 ml-3 shrink-0">
+            <X size={18} />
+          </button>
+        </div>
+        <p className="text-sm text-zinc-400 mb-5">{message}</p>
+        <div className="flex gap-3 justify-end">
+          <button onClick={onCancel} className="btn-secondary text-sm">Volver</button>
+          <button
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-500 text-white text-sm font-bold px-4 py-2 rounded-lg transition-all"
+          >
+            Sí, cancelar evento
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const Field = ({ label, children }) => (
   <div>
@@ -26,6 +51,7 @@ export default function AdminEventos() {
   const [creandoEvento, setCreandoEvento] = useState(false)
   const [creandoSector, setCreandoSector] = useState(false)
   const [cancelando, setCancelando] = useState(null)
+  const [confirmCancelar, setConfirmCancelar] = useState(null) // { id, nombre }
 
   const cargar = async () => {
     try {
@@ -94,7 +120,7 @@ export default function AdminEventos() {
   }
 
   const cancelar = async (id) => {
-    if (!confirm('¿Estás seguro de cancelar este evento?')) return
+    setConfirmCancelar(null)
     setCancelando(id); setError(''); setSuccess('')
     try {
       await api.post(`/eventos/${id}/cancelar`)
@@ -255,12 +281,12 @@ export default function AdminEventos() {
                     : <span className="badge-green">ACTIVO</span>}
                 </div>
                 <p className="text-xs text-zinc-500">
-                  🏟️ {ev.estadio} · {ev.fechaHora ? new Date(ev.fechaHora).toLocaleString('es-UY') : '—'}
+                  🏟️ {ev.estadio} · {ev.fecha ? new Date(ev.fecha).toLocaleString('es-UY') : '—'}
                 </p>
               </div>
               {ev.estado !== 'CANCELADO' && (
                 <button
-                  onClick={() => cancelar(ev.idEvento)}
+                  onClick={() => setConfirmCancelar({ id: ev.idEvento, nombre: `${ev.local} vs ${ev.visitante}` })}
                   disabled={cancelando === ev.idEvento}
                   className="btn-danger text-xs flex items-center gap-1.5 disabled:opacity-60"
                 >
@@ -279,6 +305,15 @@ export default function AdminEventos() {
           )}
         </div>
       </div>
+
+      {confirmCancelar && (
+        <ConfirmDialog
+          title="Cancelar evento"
+          message={`¿Estás seguro de cancelar "${confirmCancelar.nombre}"? Esta acción no se puede deshacer y las entradas vendidas quedarán inactivas.`}
+          onConfirm={() => cancelar(confirmCancelar.id)}
+          onCancel={() => setConfirmCancelar(null)}
+        />
+      )}
     </div>
   )
 }

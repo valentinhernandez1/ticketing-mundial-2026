@@ -15,44 +15,6 @@ public class ConsultaRepository {
         this.jdbc = jdbc;
     }
 
-    public List<Map<String, Object>> eventosDisponibles() {
-        return jdbc.queryForList("""
-                SELECT ev.id_evento, ev.id_estadio,
-                       sl.nombre AS local, sv.nombre AS visitante,
-                       est.nombre AS estadio,
-                       to_char(ev.fecha_hora_inicio, 'YYYY-MM-DD HH24:MI') AS fecha,
-                       ev.estado::text
-                FROM evento ev
-                JOIN seleccion sl  ON sl.id_seleccion = ev.id_seleccion_local
-                JOIN seleccion sv  ON sv.id_seleccion = ev.id_seleccion_visitante
-                JOIN estadio   est ON est.id_estadio  = ev.id_estadio
-                WHERE ev.estado = 'PROGRAMADO'
-                ORDER BY ev.fecha_hora_inicio
-                """);
-    }
-
-    public List<Map<String, Object>> sectoresPorEvento(Long idEvento) {
-        return jdbc.queryForList("""
-                SELECT es.id_evento_sector,
-                       s.nombre_sector::text AS sector,
-                       es.precio,
-                       es.cupo_habilitado,
-                       (SELECT COUNT(*) FROM entrada en
-                         WHERE en.id_evento_sector = es.id_evento_sector
-                           AND en.estado <> 'ANULADA') AS vendidas
-                FROM evento_sector es
-                JOIN sector s ON s.id_sector = es.id_sector
-                WHERE es.id_evento = ?
-                ORDER BY s.nombre_sector
-                """, idEvento);
-    }
-
-    // para el dropdown del registro
-    public List<Map<String, Object>> paises() {
-        return jdbc.queryForList(
-                "SELECT id_pais, codigo_iso, nombre FROM pais ORDER BY nombre");
-    }
-
     public List<Map<String, Object>> paisesSede() {
         return jdbc.queryForList("""
                 SELECT p.id_pais, p.nombre FROM pais_sede ps
@@ -67,14 +29,6 @@ public class ConsultaRepository {
 
     public List<Map<String, Object>> estadios() {
         return jdbc.queryForList("SELECT id_estadio, nombre FROM estadio ORDER BY nombre");
-    }
-
-    public List<Map<String, Object>> sectoresDeEstadio(Long idEstadio) {
-        return jdbc.queryForList("""
-                SELECT id_sector, nombre_sector::text AS nombre
-                FROM sector WHERE id_estadio = ?
-                ORDER BY nombre_sector
-                """, idEstadio);
     }
 
     public List<Map<String, Object>> funcionarios() {

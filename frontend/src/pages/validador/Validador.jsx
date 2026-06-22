@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import api from '../../api/client'
-import { ScanLine, CheckCircle, XCircle, Settings, Camera, CameraOff, Type } from 'lucide-react'
+import { ScanLine, CheckCircle, XCircle, Settings, Camera, CameraOff, Type, User } from 'lucide-react'
 
 const DEVICE_KEY = 'validador_device_id'
 
@@ -10,9 +10,10 @@ export default function Validador() {
   const [codigoQr, setCodigoQr] = useState('')
   const [resultado, setResultado] = useState(null)
   const [detalle, setDetalle] = useState('')
+  const [titular, setTitular] = useState(null) // info del titular cuando ACEPTADO
   const [validando, setValidando] = useState(false)
   const [showDeviceEdit, setShowDeviceEdit] = useState(!localStorage.getItem(DEVICE_KEY))
-  const [modo, setModo] = useState('camara') // 'camara' | 'manual'
+  const [modo, setModo] = useState('camara')
   const [escaneando, setEscaneando] = useState(false)
   const [errorCamara, setErrorCamara] = useState('')
   const scannerRef = useRef(null)
@@ -30,7 +31,6 @@ export default function Validador() {
     try {
       const html5Qr = new Html5Qrcode('qr-reader')
       html5QrRef.current = html5Qr
-      // start() primero — el div debe existir en el DOM antes de llamar setEscaneando
       await html5Qr.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -60,12 +60,10 @@ export default function Validador() {
     setEscaneando(false)
   }
 
-  // limpio la cámara al desmontar
   useEffect(() => {
     return () => { detenerCamara() }
   }, [])
 
-  // cuando cambio a modo manual detengo la cámara
   useEffect(() => {
     if (modo === 'manual') detenerCamara()
   }, [modo])
@@ -74,21 +72,34 @@ export default function Validador() {
     if (!deviceId) {
       setResultado('RECHAZADO')
       setDetalle('Configurá el ID del dispositivo primero')
+      setTitular(null)
       return
     }
     setValidando(true)
     setResultado(null)
     setDetalle('')
+    setTitular(null)
     try {
       const { data } = await api.post('/validaciones', {
         codigoQr: codigo.trim(),
         idDispositivo: parseInt(deviceId),
       })
-      setResultado(data.resultado === 'ACEPTADO' ? 'ACEPTADO' : 'RECHAZADO')
+      const res = data.resultado === 'ACEPTADO' ? 'ACEPTADO' : 'RECHAZADO'
+      setResultado(res)
       setDetalle(data.mensaje || '')
+      // si viene info del titular la mostramos
+      if (res === 'ACEPTADO' && (data.titular || data.nombreTitular || data.nombre)) {
+        setTitular({
+          nombre: data.titular || data.nombreTitular || data.nombre || null,
+          email: data.emailTitular || data.email || null,
+          partido: data.partido || data.evento || null,
+          sector: data.sector || null,
+        })
+      }
     } catch (err) {
       setResultado('RECHAZADO')
       setDetalle(err.response?.data?.detalle || err.response?.data?.message || 'Error al validar')
+      setTitular(null)
     } finally {
       setValidando(false)
     }
@@ -101,14 +112,14 @@ export default function Validador() {
     setCodigoQr('')
   }
 
-  // auto-limpiar resultado y reiniciar cámara
   useEffect(() => {
     if (!resultado) return
     const t = setTimeout(() => {
       setResultado(null)
       setDetalle('')
+      setTitular(null)
       if (modo === 'camara' && !escaneando) iniciarCamara()
-    }, 5000)
+    }, 6000)
     return () => clearTimeout(t)
   }, [resultado])
 
@@ -178,7 +189,7 @@ export default function Validador() {
 
       {/* Resultado */}
       {resultado && (
-        <div className={`rounded-2xl border-2 p-8 text-center mb-4 ${
+        <div className={`rounded-2xl border-2 p-6 text-center mb-4 ${
           resultado === 'ACEPTADO'
             ? 'bg-green-950/50 border-green-500 shadow-lg shadow-green-900/30'
             : 'bg-red-950/50 border-red-500 shadow-lg shadow-red-900/30'
@@ -187,7 +198,29 @@ export default function Validador() {
             <>
               <CheckCircle size={56} className="text-green-400 mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-4xl font-black text-green-400">ACEPTADO</p>
-              <p className="text-zinc-400 text-sm mt-2">Ingreso registrado ✓</p>
+              <p className="text-zinc-400 text-sm mt-1">Ingreso registrado ✓</p>
+
+              {/* Info del titular */}
+              {titular && (titular.nombre || titular.email || titular.partido) && (
+                <div className="mt-4 bg-green-950/50 border border-green-800/40 rounded-xl p-3 text-left">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User size={13} className="text-green-400" />
+                    <span className="text-xs font-bold text-green-400 uppercase tracking-wider">Titular</span>
+                  </div>
+                  {titular.nombre && (
+                    <p className="text-sm font-semibold text-white">{titular.nombre}</p>
+                  )}
+                  {titular.email && (
+                    <p className="text-xs text-zinc-400 mt-0.5">{titular.email}</p>
+                  )}
+                  {titular.partido && (
+                    <p className="text-xs text-zinc-500 mt-1">⚽ {titular.partido}</p>
+                  )}
+                  {titular.sector && (
+                    <p className="text-xs text-zinc-500">Sector {titular.sector}</p>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -195,15 +228,14 @@ export default function Validador() {
               <p className="text-4xl font-black text-red-400">RECHAZADO</p>
             </>
           )}
-          {detalle && <p className="text-sm text-zinc-400 mt-2">{detalle}</p>}
-          <p className="text-xs text-zinc-600 mt-3">Se limpia en 5 segundos...</p>
+          {detalle && <p className="text-sm text-zinc-400 mt-3">{detalle}</p>}
+          <p className="text-xs text-zinc-600 mt-3">Se limpia en 6 segundos...</p>
         </div>
       )}
 
       {/* MODO CÁMARA */}
       {modo === 'camara' && !resultado && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-          {/* Área del scanner */}
           <div className="relative bg-black" style={{ minHeight: 280 }}>
             <div id="qr-reader" className="w-full" />
             {!escaneando && (

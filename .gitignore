@@ -11,6 +11,11 @@
 # Build artifacts Spring Boot
 springboot/target/
 
+# Build artifacts React (generados en Docker, no van al repo)
+springboot/src/main/resources/static/assets/
+frontend/node_modules/
+frontend/dist/
+
 # IDE
 .idea/
 *.iml

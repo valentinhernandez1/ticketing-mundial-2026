@@ -28,10 +28,15 @@ public class SecurityConfig {
                         "/assets/**", "/*.js", "/*.css", "/*.svg", "/*.png",
                         "/app.js", "/styles.css").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/consulta/paises").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/paises").permitAll()
                 .requestMatchers("/api/compras/**").hasRole("USUARIO_GENERAL")
                 // cualquier usuario autenticado puede recibir o ver transferencias
                 .requestMatchers("/api/transferencias/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/admins").hasRole("ADMINISTRADOR_PAIS")
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/funcionarios").hasRole("ADMINISTRADOR_PAIS")
+                .requestMatchers(HttpMethod.POST, "/api/usuarios/admins").hasRole("ADMINISTRADOR_PAIS")
+                .requestMatchers(HttpMethod.POST, "/api/usuarios/funcionarios").hasRole("ADMINISTRADOR_PAIS")
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/*/entradas/*/historial").authenticated()
                 .requestMatchers("/api/usuarios/**").authenticated()
                 .requestMatchers("/api/validaciones/**").hasRole("FUNCIONARIO_VALIDACION")
                 .requestMatchers("/api/estadios/**").hasRole("ADMINISTRADOR_PAIS")

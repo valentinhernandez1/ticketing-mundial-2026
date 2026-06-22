@@ -4,6 +4,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import uy.edu.ucu.ticketing.service.AuditoriaTransferenciaService;
 import uy.edu.ucu.ticketing.service.CompraService;
 import uy.edu.ucu.ticketing.service.EntradaService;
 import uy.edu.ucu.ticketing.service.TransferenciaService;
@@ -19,13 +20,16 @@ public class EntradaController {
     private final EntradaService entradaService;
     private final TransferenciaService transferenciaService;
     private final CompraService compraService;
+    private final AuditoriaTransferenciaService auditoriaService;
 
     public EntradaController(EntradaService entradaService,
                              TransferenciaService transferenciaService,
-                             CompraService compraService) {
+                             CompraService compraService,
+                             AuditoriaTransferenciaService auditoriaService) {
         this.entradaService = entradaService;
         this.transferenciaService = transferenciaService;
         this.compraService = compraService;
+        this.auditoriaService = auditoriaService;
     }
 
     private void verificarPropietario(Long id, Long uid) {
@@ -49,5 +53,14 @@ public class EntradaController {
     public List<Map<String, Object>> misTransferencias(@PathVariable Long id, @AuthenticationPrincipal Long uid) {
         verificarPropietario(id, uid);
         return transferenciaService.transferenciasUsuario(id);
+    }
+
+    // historial de auditoría de una entrada: emisión, transferencias y validación
+    @GetMapping("/entradas/{idEntrada}/historial")
+    public List<Map<String, Object>> historial(@PathVariable Long id,
+                                               @PathVariable Long idEntrada,
+                                               @AuthenticationPrincipal Long uid) {
+        verificarPropietario(id, uid);
+        return auditoriaService.historialEntrada(idEntrada);
     }
 }

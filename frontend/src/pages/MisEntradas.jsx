@@ -1,8 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/client'
-import QRCode from 'qrcode'
-import { Ticket, X, RefreshCw, AlertCircle } from 'lucide-react'
+import QRModal from '../components/QRModal'
+import PageHeader from '../components/ui/PageHeader'
+import Alert from '../components/ui/Alert'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import EmptyState from '../components/ui/EmptyState'
+import { Ticket, ShoppingBag } from 'lucide-react'
 
 const SECTOR_BORDER = {
   A: 'border-l-yellow-500',
@@ -23,111 +28,13 @@ const VENTA_BADGE = {
   PAGA:       null,
 }
 
-function QRModal({ entradaId, onClose }) {
-  const [qrDataUrl, setQrDataUrl] = useState(null)
-  const [countdown, setCountdown] = useState(30)
-  const [tokenCodigo, setTokenCodigo] = useState('')
-  const [loadingQr, setLoadingQr] = useState(true)
-  const [qrError, setQrError] = useState('')
-
-  const fetchToken = useCallback(async () => {
-    setLoadingQr(true)
-    setQrError('')
-    try {
-      const { data } = await api.post(`/entradas/${entradaId}/token`)
-      const codigo = data.codigo || data.token || JSON.stringify(data)
-      setTokenCodigo(codigo)
-      const url = await QRCode.toDataURL(codigo, { width: 220, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
-      setQrDataUrl(url)
-      setCountdown(30)
-    } catch (err) {
-      setQrError('No se pudo generar el QR')
-    } finally {
-      setLoadingQr(false)
-    }
-  }, [entradaId])
-
-  useEffect(() => {
-    fetchToken()
-    const timer = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { fetchToken(); return 30 }
-        return c - 1
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [fetchToken])
-
-  const progress = (countdown / 30) * 100
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-zinc-600 hover:text-zinc-300 transition-colors"
-        >
-          <X size={20} />
-        </button>
-
-        <h3 className="text-lg font-bold text-white mb-1">Código de acceso</h3>
-        <p className="text-xs text-zinc-500 mb-5">Presentá este QR en el ingreso al estadio</p>
-
-        {qrError ? (
-          <div className="flex flex-col items-center gap-3 py-8">
-            <AlertCircle size={32} className="text-red-400" />
-            <p className="text-red-400 text-sm">{qrError}</p>
-            <button onClick={fetchToken} className="btn-secondary flex items-center gap-2 text-sm">
-              <RefreshCw size={14} /> Reintentar
-            </button>
-          </div>
-        ) : loadingQr && !qrDataUrl ? (
-          <div className="flex items-center justify-center h-56">
-            <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-          </div>
-        ) : (
-          <>
-            {/* QR */}
-            <div className="flex justify-center mb-4">
-              <div className="bg-white p-3 rounded-xl shadow-inner">
-                {qrDataUrl && <img src={qrDataUrl} alt="QR" width={220} height={220} />}
-              </div>
-            </div>
-
-            {/* Countdown */}
-            <div className="text-center mb-3">
-              <span className={`text-5xl font-black tabular-nums ${countdown <= 10 ? 'text-red-400' : 'text-green-400'}`}
-                style={{ textShadow: countdown <= 10 ? '0 0 20px rgba(239,68,68,0.5)' : '0 0 20px rgba(74,222,128,0.5)' }}>
-                {countdown}
-              </span>
-              <p className="text-xs text-zinc-600 mt-1">segundos para renovar</p>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden mb-4">
-              <div
-                className={`h-full rounded-full transition-all duration-1000 ${countdown <= 10 ? 'bg-red-500' : 'bg-green-500'}`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-
-            {/* Token code */}
-            {tokenCodigo && (
-              <p className="text-center font-mono text-xs text-zinc-600 break-all">{tokenCodigo}</p>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export default function MisEntradas() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [entradas, setEntradas] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [qrEntradaId, setQrEntradaId] = useState(null)
+  const [qrEntrada, setQrEntrada] = useState(null)
 
   useEffect(() => {
     api.get(`/usuarios/${user.id}/entradas`)
@@ -138,32 +45,30 @@ export default function MisEntradas() {
 
   const fmt = (n) => `$${(n || 0).toLocaleString('es-UY', { minimumFractionDigits: 2 })}`
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <LoadingSpinner />
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-white">Mis entradas</h1>
-        <p className="text-zinc-500 text-sm mt-1">{entradas.length} entrada{entradas.length !== 1 ? 's' : ''} en tu cuenta</p>
-      </div>
+      <PageHeader
+        icon={Ticket}
+        title="Mis entradas"
+        subtitle={`${entradas.length} entrada${entradas.length !== 1 ? 's' : ''} en tu cuenta`}
+      />
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-lg px-4 py-3 mb-4">
-          <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <span className="text-red-400 text-sm">{error}</span>
-        </div>
-      )}
+      <Alert type="error" message={error} className="mb-4" />
 
       {entradas.length === 0 && !loading && (
-        <div className="card text-center py-16">
-          <Ticket size={40} className="text-zinc-700 mx-auto mb-3" />
-          <p className="text-zinc-500 font-medium">No tenés entradas aún</p>
-          <p className="text-zinc-600 text-sm mt-1">Comprá en la sección "Comprar entradas"</p>
-        </div>
+        <EmptyState
+          icon={Ticket}
+          title="No tenés entradas todavía"
+          description="Comprá tu primera entrada y disfrutá el Mundial"
+          action={
+            <button onClick={() => navigate('/comprar')} className="btn-primary inline-flex items-center gap-2">
+              <ShoppingBag size={15} />
+              Ir a comprar
+            </button>
+          }
+        />
       )}
 
       <div className="flex flex-col gap-3">
@@ -178,7 +83,7 @@ export default function MisEntradas() {
           return (
             <div
               key={entrada.idEntrada}
-              className={`bg-zinc-900 border border-zinc-800 border-l-4 ${borderColor} rounded-xl p-5 flex items-center gap-4`}
+              className={`list-item border-l-4 ${borderColor} flex items-center gap-4`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -199,7 +104,7 @@ export default function MisEntradas() {
                 <p className="text-lg font-black text-white">{fmt(entrada.precio)}</p>
                 {canQr && (
                   <button
-                    onClick={() => setQrEntradaId(entrada.idEntrada)}
+                    onClick={() => setQrEntrada(entrada)}
                     className="btn-primary text-xs px-3 py-1.5 mt-2 flex items-center gap-1.5"
                   >
                     <Ticket size={12} />
@@ -215,8 +120,8 @@ export default function MisEntradas() {
         })}
       </div>
 
-      {qrEntradaId && (
-        <QRModal entradaId={qrEntradaId} onClose={() => setQrEntradaId(null)} />
+      {qrEntrada && (
+        <QRModal entrada={qrEntrada} onClose={() => setQrEntrada(null)} />
       )}
     </div>
   )

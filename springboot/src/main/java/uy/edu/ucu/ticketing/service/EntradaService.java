@@ -25,10 +25,18 @@ public class EntradaService {
 
     @Transactional
     public Map<String, Object> generarToken(Long idEntrada, Long idUsuario) {
-        tokenRepo.findEntradaDeUsuario(idEntrada, idUsuario)
-                .filter(e -> !"CONSUMIDA".equals(e.get("estado")))
+        Map<String, Object> entrada = tokenRepo.findEntradaDeUsuario(idEntrada, idUsuario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Esta entrada no es tuya o ya fue consumida"));
+                        "Esta entrada no es tuya"));
+
+        if ("CONSUMIDA".equals(entrada.get("estado")))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La entrada ya fue consumida");
+
+        // la venta tiene que estar paga para poder usar el QR
+        if (!"PAGA".equals(entrada.get("estadoVenta")))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tenés que pagar la compra antes de usar el QR");
+
         return tokenRepo.generarToken(idEntrada);
     }
 }

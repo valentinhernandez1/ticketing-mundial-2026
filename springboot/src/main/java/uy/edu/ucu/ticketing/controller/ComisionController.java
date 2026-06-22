@@ -3,6 +3,7 @@ package uy.edu.ucu.ticketing.controller;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import uy.edu.ucu.ticketing.service.ComisionService;
 
@@ -31,7 +32,7 @@ public class ComisionController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR_PAIS')")
-    public Map<String, Object> crear(@RequestBody ComisionRequest req) {
+    public Map<String, Object> crear(@Valid @RequestBody ComisionRequest req) {
         Long id = comisionService.crear(req.porcentaje(), req.fechaInicio());
         return Map.of("idComision", id);
     }

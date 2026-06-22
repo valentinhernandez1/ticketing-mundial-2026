@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/client'
-import { Receipt, CreditCard, AlertCircle, CheckCircle } from 'lucide-react'
+import PageHeader from '../components/ui/PageHeader'
+import Alert from '../components/ui/Alert'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import EmptyState from '../components/ui/EmptyState'
+import { Receipt, CreditCard, CheckCircle, Ticket, ShoppingBag } from 'lucide-react'
 
 const ESTADO_BADGE = {
   PENDIENTE: <span className="badge-yellow">PENDIENTE</span>,
   CONFIRMADA: <span className="badge-blue">CONFIRMADA</span>,
   PAGA: <span className="badge-green">PAGA</span>,
+  ANULADA: <span className="badge-red">ANULADA</span>,
 }
 
 export default function MisCompras() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [compras, setCompras] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -60,38 +67,31 @@ export default function MisCompras() {
 
   const fmt = (n) => `$${(n || 0).toLocaleString('es-UY', { minimumFractionDigits: 2 })}`
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <LoadingSpinner />
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-white">Mis compras</h1>
-        <p className="text-zinc-500 text-sm mt-1">Historial de todas tus compras</p>
-      </div>
+      <PageHeader
+        icon={Receipt}
+        title="Mis compras"
+        subtitle="Historial de todas tus compras"
+      />
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-lg px-4 py-3 mb-4">
-          <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <span className="text-red-400 text-sm">{error}</span>
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 bg-green-900/30 border border-green-800/50 rounded-lg px-4 py-3 mb-4">
-          <CheckCircle size={16} className="text-green-400 shrink-0" />
-          <span className="text-green-400 text-sm">{success}</span>
-        </div>
-      )}
+      <Alert type="error" message={error} className="mb-4" />
+      <Alert type="success" message={success} className="mb-4" />
 
       {compras.length === 0 && !loading && (
-        <div className="card text-center py-16">
-          <Receipt size={40} className="text-zinc-700 mx-auto mb-3" />
-          <p className="text-zinc-500 font-medium">No tenés compras aún</p>
-          <p className="text-zinc-600 text-sm mt-1">Tus compras aparecerán aquí</p>
-        </div>
+        <EmptyState
+          icon={Receipt}
+          title="No hiciste ninguna compra aún"
+          description="Cuando compres entradas aparecerán aquí"
+          action={
+            <button onClick={() => navigate('/comprar')} className="btn-primary inline-flex items-center gap-2">
+              <ShoppingBag size={15} />
+              Comprar entradas
+            </button>
+          }
+        />
       )}
 
       <div className="flex flex-col gap-3">
@@ -103,13 +103,14 @@ export default function MisCompras() {
           const subtotal = compra.subtotal
           const comision = compra.comision
           const total = compra.total
+          const entradas = compra.entradas || []
 
           const fechaFmt = fecha ? new Date(fecha).toLocaleString('es-UY', {
             day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
           }) : '—'
 
           return (
-            <div key={id ?? idx} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <div key={id ?? idx} className="list-item">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -118,11 +119,28 @@ export default function MisCompras() {
                   </div>
                   <p className="text-xs text-zinc-500 mb-3">{fechaFmt}</p>
 
-                  <div className="flex items-center gap-4 text-xs text-zinc-500">
+                  <div className="flex items-center gap-4 text-xs text-zinc-500 mb-3">
                     <span>{cantEntradas ?? '?'} entrada{cantEntradas !== 1 ? 's' : ''}</span>
                     {subtotal != null && <span>Subtotal: <span className="text-zinc-300">{fmt(subtotal)}</span></span>}
                     {comision != null && <span>Comisión: <span className="text-zinc-300">{fmt(comision)}</span></span>}
                   </div>
+
+                  {/* Detalle de entradas */}
+                  {entradas.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {entradas.map((en, ei) => (
+                        <div key={ei} className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-xs">
+                          <Ticket size={10} className="text-green-400" />
+                          <span className="text-zinc-300">
+                            {en.seleccionLocal || en.local || '—'} vs {en.seleccionVisitante || en.visitante || '—'}
+                          </span>
+                          {(en.nombreSector || en.sector) && (
+                            <span className="text-zinc-500">· Sector {en.nombreSector || en.sector}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-right shrink-0">
@@ -149,6 +167,15 @@ export default function MisCompras() {
                         ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         : <CreditCard size={12} />}
                       Pagar
+                    </button>
+                  )}
+                  {estado === 'PAGA' && (
+                    <button
+                      onClick={() => navigate('/mis-entradas')}
+                      className="btn-secondary text-xs px-3 py-1.5 mt-2 flex items-center gap-1.5 ml-auto"
+                    >
+                      <Ticket size={12} />
+                      Ver entradas
                     </button>
                   )}
                 </div>

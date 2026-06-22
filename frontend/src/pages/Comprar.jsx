@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
-import { ShoppingCart, Trash2, Ticket, AlertCircle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import PageHeader from '../components/ui/PageHeader'
+import Alert from '../components/ui/Alert'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import EmptyState from '../components/ui/EmptyState'
+import { ShoppingCart, Trash2, Ticket, ChevronDown, ChevronUp, ShoppingBag } from 'lucide-react'
 
 const SECTOR_STYLES = {
   A: { bg: 'bg-yellow-950/40', border: 'border-yellow-800/40', text: 'text-yellow-400', btn: 'bg-yellow-600 hover:bg-yellow-500 text-black font-bold', label: 'Sector A — VIP' },
@@ -33,7 +37,7 @@ function SectorCard({ sector, onAdd }) {
 }
 
 export default function Comprar() {
-  const { user } = useAuth()
+  const navigate = useNavigate()
   const [eventos, setEventos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -41,7 +45,7 @@ export default function Comprar() {
   const [comprando, setComprando] = useState(false)
   const [success, setSuccess] = useState('')
   const [expanded, setExpanded] = useState({})
-  const [tasaComision, setTasaComision] = useState(5) // porcentaje vigente de la BD
+  const [tasaComision, setTasaComision] = useState(5)
 
   useEffect(() => {
     Promise.all([
@@ -75,8 +79,9 @@ export default function Comprar() {
     try {
       const eventoSectores = carrito.map(i => i.sector.idEventoSector)
       await api.post('/compras', { eventoSectores })
-      setSuccess('¡Compra realizada! Revisá "Mis compras" para pagar.')
+      setSuccess('¡Compra realizada! Redirigiendo a tus compras...')
       setCarrito([])
+      setTimeout(() => navigate('/mis-compras'), 1500)
     } catch (err) {
       setError(err.response?.data?.detalle || err.response?.data?.message || 'Error al realizar la compra')
     } finally {
@@ -88,36 +93,25 @@ export default function Comprar() {
 
   const fmt = (n) => `$${(n || 0).toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <LoadingSpinner />
 
   return (
-    <div className="pb-48">
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-white">Comprar entradas</h1>
-        <p className="text-zinc-500 text-sm mt-1">Seleccioná los sectores para los partidos que querés ver</p>
-      </div>
+    <div className={carrito.length > 0 ? 'pb-52 md:pb-48' : 'pb-4'}>
+      <PageHeader
+        icon={ShoppingBag}
+        title="Comprar entradas"
+        subtitle="Seleccioná los sectores para los partidos que querés ver"
+      />
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-lg px-4 py-3 mb-4">
-          <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <span className="text-red-400 text-sm">{error}</span>
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 bg-green-900/30 border border-green-800/50 rounded-lg px-4 py-3 mb-4">
-          <CheckCircle size={16} className="text-green-400 shrink-0" />
-          <span className="text-green-400 text-sm">{success}</span>
-        </div>
-      )}
+      <Alert type="error" message={error} className="mb-4" />
+      <Alert type="success" message={success} className="mb-4" />
 
       {eventos.length === 0 && !loading && (
-        <div className="card text-center py-12">
-          <p className="text-zinc-500">No hay eventos disponibles por el momento</p>
-        </div>
+        <EmptyState
+          emoji="⚽"
+          title="No hay eventos disponibles por el momento"
+          description="Volvé a revisar más tarde"
+        />
       )}
 
       <div className="flex flex-col gap-4">
@@ -187,7 +181,7 @@ export default function Comprar() {
 
       {/* Carrito sticky */}
       {carrito.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-40 p-4">
+        <div className="fixed bottom-16 md:bottom-0 inset-x-0 z-40 p-4">
           <div className="max-w-5xl mx-auto bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl shadow-black/70 p-4">
             <div className="flex items-start gap-4">
               {/* Items */}

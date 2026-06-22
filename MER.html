@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MER Ticketing Mundial 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<style>body{background:#11111b;display:flex;justify-content:center;padding:20px}</style>
+</head>
+<body>
+<div class="mermaid">
+erDiagram
+    PAIS { int id_pais PK }
+    PAIS_SEDE { int id_pais PK }
+    DIRECCION { bigint id_direccion PK }
+    USUARIO { bigint id_usuario PK }
+    DOCUMENTO { bigint id_documento PK }
+    TELEFONO { bigint id_telefono PK }
+    USUARIO_GENERAL { bigint id_usuario PK }
+    ADMINISTRADOR_PAIS { bigint id_usuario PK }
+    FUNCIONARIO_VALIDACION { bigint id_usuario PK }
+    DISPOSITIVO { bigint id_dispositivo PK }
+    ESTADIO { bigint id_estadio PK }
+    SECTOR { bigint id_sector PK }
+    SELECCION { bigint id_seleccion PK }
+    EVENTO { bigint id_evento PK }
+    EVENTO_SECTOR { bigint id_evento_sector PK }
+    ASIGNACION_FUNCIONARIO_SECTOR { bigint id_asignacion PK }
+    COMISION { bigint id_comision PK }
+    VENTA { bigint id_venta PK }
+    ENTRADA { bigint id_entrada PK }
+    TRANSFERENCIA { bigint id_transferencia PK }
+    TOKEN_QR { bigint id_token PK }
+    VALIDACION { bigint id_validacion PK }
+    AUDITORIA_TRANSFERENCIA { bigint id_auditoria PK }
+
+    PAIS ||--o{ PAIS_SEDE : "es sede"
+    PAIS ||--o{ DIRECCION : "localiza"
+    PAIS ||--o{ DOCUMENTO : "emite"
+    PAIS_SEDE ||--o{ ESTADIO : "aloja"
+    PAIS_SEDE ||--o{ ADMINISTRADOR_PAIS : "jurisdiccion"
+    DIRECCION ||--|| USUARIO : "1:1"
+    USUARIO ||--|| DOCUMENTO : "1:1"
+    USUARIO ||--o{ TELEFONO : "tiene"
+    USUARIO ||--o| USUARIO_GENERAL : "es"
+    USUARIO ||--o| ADMINISTRADOR_PAIS : "es"
+    USUARIO ||--o| FUNCIONARIO_VALIDACION : "es"
+    FUNCIONARIO_VALIDACION ||--o{ DISPOSITIVO : "vinculado a"
+    ESTADIO ||--o{ SECTOR : "tiene"
+    ESTADIO ||--o{ EVENTO : "sede de"
+    SELECCION ||--o{ EVENTO : "local"
+    SELECCION ||--o{ EVENTO : "visitante"
+    ADMINISTRADOR_PAIS ||--o{ EVENTO : "gestiona"
+    EVENTO ||--o{ EVENTO_SECTOR : "tiene"
+    SECTOR ||--o{ EVENTO_SECTOR : "incluido en"
+    FUNCIONARIO_VALIDACION ||--o{ ASIGNACION_FUNCIONARIO_SECTOR : "trabaja en"
+    EVENTO ||--o{ ASIGNACION_FUNCIONARIO_SECTOR : "para"
+    SECTOR ||--o{ ASIGNACION_FUNCIONARIO_SECTOR : "en"
+    COMISION ||--o{ VENTA : "aplica"
+    USUARIO_GENERAL ||--o{ VENTA : "realiza"
+    VENTA ||--o{ ENTRADA : "contiene"
+    EVENTO_SECTOR ||--o{ ENTRADA : "corresponde a"
+    USUARIO_GENERAL ||--o{ ENTRADA : "posee"
+    ENTRADA ||--o{ TRANSFERENCIA : "se transfiere"
+    USUARIO_GENERAL ||--o{ TRANSFERENCIA : "origen"
+    USUARIO_GENERAL ||--o{ TRANSFERENCIA : "destino"
+    ENTRADA ||--o{ TOKEN_QR : "genera"
+    ENTRADA ||--o{ VALIDACION : "validada en"
+    TOKEN_QR ||--o{ VALIDACION : "usado en"
+    FUNCIONARIO_VALIDACION ||--o{ VALIDACION : "realiza"
+    DISPOSITIVO ||--o{ VALIDACION : "registra"
+    TRANSFERENCIA ||--o{ AUDITORIA_TRANSFERENCIA : "auditada"
+    ENTRADA ||--o{ AUDITORIA_TRANSFERENCIA : "referencia"
+</div>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'})</script>
+</body>
+</html>

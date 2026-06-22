@@ -4,6 +4,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uy.edu.ucu.ticketing.dto.ConsultaDtos.*;
 import uy.edu.ucu.ticketing.repository.ConsultaRepository;
+import uy.edu.ucu.ticketing.repository.EventoRepository;
+import uy.edu.ucu.ticketing.repository.EventoSectorRepository;
+import uy.edu.ucu.ticketing.repository.SectorRepository;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -14,9 +17,16 @@ import java.util.Map;
 public class ConsultaService {
 
     private final ConsultaRepository consultaRepo;
+    private final EventoRepository eventoRepo;
+    private final EventoSectorRepository eventoSectorRepo;
+    private final SectorRepository sectorRepo;
 
-    public ConsultaService(ConsultaRepository consultaRepo) {
+    public ConsultaService(ConsultaRepository consultaRepo, EventoRepository eventoRepo,
+                           EventoSectorRepository eventoSectorRepo, SectorRepository sectorRepo) {
         this.consultaRepo = consultaRepo;
+        this.eventoRepo = eventoRepo;
+        this.eventoSectorRepo = eventoSectorRepo;
+        this.sectorRepo = sectorRepo;
     }
 
     private static long num(Object o) { return o == null ? 0L : ((Number) o).longValue(); }
@@ -24,13 +34,13 @@ public class ConsultaService {
 
     @Transactional(readOnly = true)
     public List<EventoDisp> eventosDisponibles() {
-        List<Map<String, Object>> evs = consultaRepo.eventosDisponibles();
+        List<Map<String, Object>> evs = eventoRepo.disponibles();
         List<EventoDisp> resultado = new ArrayList<>();
 
         for (Map<String, Object> ev : evs) {
             Long idEvento = num(ev.get("id_evento"));
 
-            List<SectorDisp> sectores = consultaRepo.sectoresPorEvento(idEvento).stream()
+            List<SectorDisp> sectores = eventoSectorRepo.sectoresPorEvento(idEvento).stream()
                     .map(s -> {
                         long cupo = num(s.get("cupo_habilitado"));
                         long vendidas = num(s.get("vendidas"));
@@ -59,7 +69,7 @@ public class ConsultaService {
 
     @Transactional(readOnly = true)
     public List<Item> sectoresDeEstadio(Long idEstadio) {
-        return consultaRepo.sectoresDeEstadio(idEstadio).stream()
+        return sectorRepo.sectoresDeEstadio(idEstadio).stream()
                 .map(r -> new Item(num(r.get("id_sector")), str(r.get("nombre")))).toList();
     }
 
@@ -68,8 +78,4 @@ public class ConsultaService {
         return consultaRepo.funcionarios();
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> paises() {
-        return consultaRepo.paises();
-    }
 }

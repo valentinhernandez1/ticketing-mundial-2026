@@ -48,3 +48,12 @@ export const validar = (data) => api.post('/validaciones', data)
 export const getRankingCompradores = () => api.get('/reportes/ranking-compradores')
 export const getEventosTop = () => api.get('/reportes/eventos-top')
 export const getEstadisticas = () => api.get('/reportes/estadisticas-estadio')
+
+// Staff (admins y funcionarios)
+export const crearAdmin = (data) => api.post('/usuarios/admins', data)
+export const crearFuncionario = (data) => api.post('/usuarios/funcionarios', data)
+export const getAdmins = () => api.get('/usuarios/admins')
+export const getFuncionariosStaff = () => api.get('/usuarios/funcionarios')
+
+// Historial de entrada
+export const getHistorialEntrada = (userId, idEntrada) => api.get(`/usuarios/${userId}/entradas/${idEntrada}/historial`)

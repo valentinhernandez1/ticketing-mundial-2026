@@ -1,0 +1,345 @@
+@startuml MER_Ticketing_Mundial2026
+
+skinparam linetype ortho
+skinparam ranksep 60
+skinparam nodesep 40
+hide circle
+
+skinparam entity {
+    BackgroundColor #1e1e2e
+    BorderColor #89b4fa
+    FontColor #cdd6f4
+    FontSize 11
+    FontStyle bold
+}
+skinparam arrow {
+    Color #89b4fa
+    FontColor #cdd6f4
+    FontSize 9
+}
+skinparam packageBackgroundColor #181825
+skinparam packageBorderColor #45475a
+skinparam packageFontColor #cba6f7
+skinparam backgroundColor #11111b
+
+' =========================================================
+'  PAQUETE: GEOGRAFÍA
+' =========================================================
+package "Geografía" <<Rectangle>> {
+
+entity PAIS {
+    *id_pais : SERIAL <<PK>>
+    --
+    codigo_iso : CHAR(3) <<UK>>
+    nombre : VARCHAR(80) <<UK>>
+}
+
+entity PAIS_SEDE {
+    *id_pais : INT <<PK, FK>>
+    --
+    fecha_alta_sede : DATE
+}
+
+}
+
+' =========================================================
+'  PAQUETE: USUARIOS
+' =========================================================
+package "Usuarios" <<Rectangle>> {
+
+entity DIRECCION {
+    *id_direccion : BIGSERIAL <<PK>>
+    --
+    id_pais : INT <<FK>>
+    localidad : VARCHAR(80)
+    calle : VARCHAR(120)
+    numero : VARCHAR(15)
+    codigo_postal : VARCHAR(15)
+}
+
+entity USUARIO {
+    *id_usuario : BIGSERIAL <<PK>>
+    --
+    email : CITEXT <<UK>>
+    nombre : VARCHAR(80)
+    apellido : VARCHAR(80)
+    id_direccion : BIGINT <<FK, 1:1>>
+    fecha_alta : TIMESTAMPTZ
+    password_hash : VARCHAR(72)
+}
+
+entity DOCUMENTO {
+    *id_documento : BIGSERIAL <<PK>>
+    --
+    id_usuario : BIGINT <<FK, 1:1>>
+    id_pais : INT <<FK>>
+    tipo_documento : VARCHAR(10)
+    numero : VARCHAR(30)
+    ' UK: (id_pais, tipo_documento, numero)
+}
+
+entity TELEFONO {
+    *id_telefono : BIGSERIAL <<PK>>
+    --
+    id_usuario : BIGINT <<FK>>
+    numero : VARCHAR(25)
+    tipo : VARCHAR(15)
+}
+
+entity USUARIO_GENERAL {
+    *id_usuario : BIGINT <<PK, FK>>
+    --
+    fecha_registro : TIMESTAMPTZ
+    identidad_verificada : BOOLEAN
+}
+
+entity ADMINISTRADOR_PAIS {
+    *id_usuario : BIGINT <<PK, FK>>
+    --
+    id_pais : INT <<FK>>
+    fecha_asignacion : DATE
+}
+
+entity FUNCIONARIO_VALIDACION {
+    *id_usuario : BIGINT <<PK, FK>>
+    --
+    numero_legajo : VARCHAR(20) <<UK>>
+}
+
+entity DISPOSITIVO {
+    *id_dispositivo : BIGSERIAL <<PK>>
+    --
+    id_funcionario : BIGINT <<FK>>
+    identificador_fisico : VARCHAR(60) <<UK>>
+    estado : VARCHAR(12)
+    fecha_registro : TIMESTAMPTZ
+}
+
+}
+
+' =========================================================
+'  PAQUETE: INFRAESTRUCTURA Y EVENTOS
+' =========================================================
+package "Infraestructura y Eventos" <<Rectangle>> {
+
+entity ESTADIO {
+    *id_estadio : BIGSERIAL <<PK>>
+    --
+    id_pais : INT <<FK>>
+    nombre : VARCHAR(120)
+    ciudad : VARCHAR(80)
+    direccion : VARCHAR(160)
+}
+
+entity SECTOR {
+    *id_sector : BIGSERIAL <<PK>>
+    --
+    id_estadio : BIGINT <<FK>>
+    nombre_sector : CHAR(1)
+    capacidad_maxima : INT
+    precio_base : NUMERIC(12,2)
+    ' UK: (id_estadio, nombre_sector)
+}
+
+entity SELECCION {
+    *id_seleccion : BIGSERIAL <<PK>>
+    --
+    nombre : VARCHAR(60)
+    codigo_fifa : CHAR(3) <<UK>>
+}
+
+entity EVENTO {
+    *id_evento : BIGSERIAL <<PK>>
+    --
+    id_estadio : BIGINT <<FK>>
+    id_seleccion_local : BIGINT <<FK>>
+    id_seleccion_visitante : BIGINT <<FK>>
+    id_administrador : BIGINT <<FK>>
+    fecha_hora_inicio : TIMESTAMPTZ
+    duracion_minutos : INT
+    estado : VARCHAR(12)
+    ' EXCLUDE: no solapamiento por estadio
+}
+
+entity EVENTO_SECTOR {
+    *id_evento_sector : BIGSERIAL <<PK>>
+    --
+    id_evento : BIGINT <<FK>>
+    id_sector : BIGINT <<FK>>
+    cupo_habilitado : INT
+    precio : NUMERIC(12,2)
+    ' UK: (id_evento, id_sector)
+}
+
+entity ASIGNACION_FUNCIONARIO_SECTOR {
+    *id_asignacion : BIGSERIAL <<PK>>
+    --
+    id_funcionario : BIGINT <<FK>>
+    id_evento : BIGINT <<FK>>
+    id_sector : BIGINT <<FK>>
+    ' UK: (id_funcionario, id_evento, id_sector)
+}
+
+}
+
+' =========================================================
+'  PAQUETE: VENTAS
+' =========================================================
+package "Ventas y Entradas" <<Rectangle>> {
+
+entity COMISION {
+    *id_comision : BIGSERIAL <<PK>>
+    --
+    porcentaje : NUMERIC(5,2)
+    fecha_inicio : DATE
+    fecha_fin : DATE
+    ' EXCLUDE: sin solapamiento temporal
+}
+
+entity VENTA {
+    *id_venta : BIGSERIAL <<PK>>
+    --
+    id_usuario : BIGINT <<FK>>
+    id_comision : BIGINT <<FK>>
+    fecha : TIMESTAMPTZ
+    estado : VARCHAR(12)
+    porcentaje_aplicado : NUMERIC(5,2)
+    subtotal : NUMERIC(14,2)
+    monto_comision : NUMERIC(14,2)
+    monto_total : NUMERIC(14,2)
+}
+
+entity ENTRADA {
+    *id_entrada : BIGSERIAL <<PK>>
+    --
+    codigo_unico : UUID <<UK>>
+    id_venta : BIGINT <<FK>>
+    id_evento_sector : BIGINT <<FK>>
+    id_usuario_actual : BIGINT <<FK>>
+    fecha_emision : TIMESTAMPTZ
+    estado : VARCHAR(12)
+    precio : NUMERIC(12,2)
+    cantidad_transferencias : INT
+    ' MAX 3 transferencias
+}
+
+entity TRANSFERENCIA {
+    *id_transferencia : BIGSERIAL <<PK>>
+    --
+    id_entrada : BIGINT <<FK>>
+    id_usuario_origen : BIGINT <<FK>>
+    id_usuario_destino : BIGINT <<FK>>
+    fecha_transferencia : TIMESTAMPTZ
+    fecha_aceptacion : TIMESTAMPTZ
+    estado : VARCHAR(12)
+}
+
+entity TOKEN_QR {
+    *id_token : BIGSERIAL <<PK>>
+    --
+    id_entrada : BIGINT <<FK>>
+    codigo_token : VARCHAR(120) <<UK>>
+    fecha_generacion : TIMESTAMPTZ
+    fecha_expiracion : TIMESTAMPTZ
+    activo : BOOLEAN
+    ' Solo 1 token activo por entrada (idx parcial)
+}
+
+}
+
+' =========================================================
+'  PAQUETE: VALIDACIÓN
+' =========================================================
+package "Validación y Auditoría" <<Rectangle>> {
+
+entity VALIDACION {
+    *id_validacion : BIGSERIAL <<PK>>
+    --
+    id_entrada : BIGINT <<FK>>
+    id_token : BIGINT <<FK>>
+    id_funcionario : BIGINT <<FK>>
+    id_dispositivo : BIGINT <<FK>>
+    fecha_hora : TIMESTAMPTZ
+    codigo_qr_validado : VARCHAR(120)
+    resultado : VARCHAR(10)
+    ' Solo 1 ACEPTADO por entrada (idx parcial)
+}
+
+entity AUDITORIA_TRANSFERENCIA {
+    *id_auditoria : BIGSERIAL <<PK>>
+    --
+    id_transferencia : BIGINT <<FK>>
+    id_entrada : BIGINT <<FK>>
+    id_usuario_origen : BIGINT
+    id_usuario_destino : BIGINT
+    estado_anterior : VARCHAR(12)
+    estado_nuevo : VARCHAR(12)
+    accion : VARCHAR(20)
+    fecha_evento : TIMESTAMPTZ
+    ' Poblada automáticamente por trigger
+}
+
+}
+
+' =========================================================
+'  RELACIONES
+' =========================================================
+
+' Geografía
+PAIS          ||-right-o{ PAIS_SEDE          : "es sede de"
+PAIS          ||--o{       DIRECCION          : "localiza"
+PAIS_SEDE     ||-right-o{ ESTADIO            : "aloja"
+PAIS_SEDE     ||--o{       ADMINISTRADOR_PAIS : "jurisdicción"
+
+' Usuarios
+DIRECCION     ||--||       USUARIO            : "1:1"
+USUARIO       ||--||       DOCUMENTO          : "1:1"
+PAIS          ||--o{       DOCUMENTO          : "emite"
+USUARIO       ||--o{       TELEFONO           : "tiene"
+
+' Especialización (herencia disjunta)
+USUARIO       ||--o|       USUARIO_GENERAL          : "es"
+USUARIO       ||--o|       ADMINISTRADOR_PAIS        : "es"
+USUARIO       ||--o|       FUNCIONARIO_VALIDACION    : "es"
+
+' Dispositivos
+FUNCIONARIO_VALIDACION ||--o{ DISPOSITIVO     : "vinculado a"
+
+' Infraestructura
+ESTADIO       ||--o{       SECTOR             : "tiene"
+ESTADIO       ||--o{       EVENTO             : "sede de"
+SELECCION     ||--o{       EVENTO             : "local"
+SELECCION     ||--o{       EVENTO             : "visitante"
+ADMINISTRADOR_PAIS ||--o{  EVENTO             : "gestiona"
+EVENTO        ||--o{       EVENTO_SECTOR      : "tiene"
+SECTOR        ||--o{       EVENTO_SECTOR      : "incluido en"
+
+' Asignaciones
+FUNCIONARIO_VALIDACION ||--o{ ASIGNACION_FUNCIONARIO_SECTOR : "trabaja en"
+EVENTO        ||--o{       ASIGNACION_FUNCIONARIO_SECTOR    : ""
+SECTOR        ||--o{       ASIGNACION_FUNCIONARIO_SECTOR    : ""
+
+' Ventas
+USUARIO_GENERAL ||--o{     VENTA              : "realiza"
+COMISION        ||--o{     VENTA              : "aplica"
+VENTA           ||--o{     ENTRADA            : "contiene"
+EVENTO_SECTOR   ||--o{     ENTRADA            : "corresponde a"
+USUARIO_GENERAL ||--o{     ENTRADA            : "propietario actual"
+
+' Transferencias
+ENTRADA         ||--o{     TRANSFERENCIA      : "se transfiere"
+USUARIO_GENERAL ||--o{     TRANSFERENCIA      : "origen"
+USUARIO_GENERAL ||--o{     TRANSFERENCIA      : "destino"
+
+' QR y validación
+ENTRADA         ||--o{     TOKEN_QR           : "genera"
+ENTRADA         ||--o{     VALIDACION         : "validada en"
+TOKEN_QR        ||--o{     VALIDACION         : "usado en"
+FUNCIONARIO_VALIDACION ||--o{ VALIDACION      : "realiza"
+DISPOSITIVO     ||--o{     VALIDACION         : "registra"
+
+' Auditoría
+TRANSFERENCIA   ||--o{     AUDITORIA_TRANSFERENCIA : "auditada"
+ENTRADA         ||--o{     AUDITORIA_TRANSFERENCIA : "referencia"
+
+@enduml

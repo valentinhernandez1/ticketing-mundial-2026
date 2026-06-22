@@ -2,6 +2,7 @@ package uy.edu.ucu.ticketing.controller;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uy.edu.ucu.ticketing.service.AsignacionService;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/asignaciones")
+@PreAuthorize("hasRole('ADMINISTRADOR_PAIS')")
 public class AsignacionController {
 
     private final AsignacionService asignacionService;
