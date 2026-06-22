@@ -282,7 +282,7 @@ export default function Register() {
                   <input className="input-field" value={form.numero} onChange={e => set('numero', e.target.value)} required placeholder="1234" />
                 </Field>
                 <Field label="Cód. Postal">
-                  <input className="input-field" value={form.codigoPostal} onChange={e => set('codigoPostal', e.target.value)} placeholder="11200" />
+                  <input className="input-field" value={form.codigoPostal} onChange={e => set('codigoPostal', e.target.value)} placeholder="11200" required />
                 </Field>
               </div>
             </div>

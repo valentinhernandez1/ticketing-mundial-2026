@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import api from '../../api/client'
-import { Building2, Plus, AlertCircle, CheckCircle, Layers } from 'lucide-react'
+import { Building2, Plus, Layers } from 'lucide-react'
+import Alert from '../../components/ui/Alert'
+import PageHeader from '../../components/ui/PageHeader'
+import LoadingSpinner from '../../components/ui/LoadingSpinner'
 
 const Field = ({ label, children }) => (
   <div>
@@ -70,31 +73,17 @@ export default function AdminEstadios() {
     }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <LoadingSpinner />
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Gestión de Estadios</h1>
-        <p className="text-zinc-500 text-sm mt-1">Crear estadios y configurar sus sectores</p>
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-lg px-4 py-3">
-          <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <span className="text-red-400 text-sm">{error}</span>
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 bg-green-900/30 border border-green-800/50 rounded-lg px-4 py-3">
-          <CheckCircle size={16} className="text-green-400 shrink-0" />
-          <span className="text-green-400 text-sm">{success}</span>
-        </div>
-      )}
+      <PageHeader
+        icon={Building2}
+        title="Gestión de Estadios"
+        subtitle="Crear estadios y configurar sus sectores"
+      />
+      <Alert type="error"   message={error}   />
+      <Alert type="success" message={success} />
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Crear estadio */}

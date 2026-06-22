@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/client'
-import { ArrowRight, ArrowLeft, Send, CheckCircle, AlertCircle, ArrowLeftRight, X } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Send, CheckCircle, ArrowLeftRight, X } from 'lucide-react'
+import Alert from '../components/ui/Alert'
+import PageHeader from '../components/ui/PageHeader'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
 
 const ESTADO_BADGE = {
   PENDIENTE: <span className="badge-yellow">PENDIENTE</span>,
@@ -135,31 +138,18 @@ export default function Transferencias() {
   // info de la entrada seleccionada en el formulario
   const entradaSeleccionada = entradas.find(e => String(e.idEntrada) === String(form.idEntrada))
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-green-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <LoadingSpinner />
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Transferencias</h1>
-        <p className="text-zinc-500 text-sm mt-1">Enviá o recibí entradas de otros usuarios</p>
-      </div>
+      <PageHeader
+        icon={ArrowLeftRight}
+        title="Transferencias"
+        subtitle="Enviá o recibí entradas de otros usuarios"
+      />
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-lg px-4 py-3">
-          <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <span className="text-red-400 text-sm">{error}</span>
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 bg-green-900/30 border border-green-800/50 rounded-lg px-4 py-3">
-          <CheckCircle size={16} className="text-green-400 shrink-0" />
-          <span className="text-green-400 text-sm">{success}</span>
-        </div>
-      )}
+      <Alert type="error" message={error} />
+      <Alert type="success" message={success} />
 
       {/* Formulario transferir */}
       <div className="card">
