@@ -77,7 +77,7 @@ export default function QRModal({ entrada, onClose }) {
           )}
         </div>
 
-        <p className="text-xs text-zinc-500 mb-4">Presentá este QR en el ingreso al estadio</p>
+        <p className="text-xs text-zinc-600 mb-4">Presentá este QR en el ingreso al estadio</p>
 
         {qrError ? (
           <div className="flex flex-col items-center gap-3 py-8">
@@ -111,7 +111,7 @@ export default function QRModal({ entrada, onClose }) {
               <p className="text-xs text-zinc-600 mt-1">segundos para renovar</p>
             </div>
 
-            <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden mb-4">
+            <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden mb-4">
               <div
                 className={`h-full rounded-full transition-all duration-1000 ${isUrgent ? 'bg-orange-500' : 'bg-emerald-500'}`}
                 style={{ width: `${progress}%` }}
