@@ -348,7 +348,7 @@ CREATE TABLE token_qr (
 CREATE TABLE validacion (
     id_validacion    BIGSERIAL   NOT NULL,
     id_entrada       BIGINT      NOT NULL,
-    id_token         BIGINT      NOT NULL,        -- codigo especifico aceptado
+    id_token         BIGINT      NULL,             -- NULL para rechazos sin token valido; NOT NULL para ACEPTADO
     id_funcionario   BIGINT      NOT NULL,
     id_dispositivo   BIGINT      NOT NULL,
     fecha_hora       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -357,6 +357,7 @@ CREATE TABLE validacion (
     CONSTRAINT pk_validacion      PRIMARY KEY (id_validacion),
     -- uq_validacion_aceptada es un UNIQUE PARCIAL (ver indices abajo):
     -- permite multiples filas RECHAZADO por entrada, pero solo una ACEPTADO.
+    CONSTRAINT ck_val_token       CHECK (resultado = 'RECHAZADO' OR id_token IS NOT NULL),
     CONSTRAINT fk_val_entrada     FOREIGN KEY (id_entrada)
         REFERENCES entrada (id_entrada) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_val_token       FOREIGN KEY (id_token)

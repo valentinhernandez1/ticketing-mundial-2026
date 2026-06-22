@@ -32,6 +32,10 @@ INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
  SELECT 1,id_pais,'CI','55512345' FROM pais WHERE codigo_iso='URY';
 INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
  SELECT 2,id_pais,'CI','44498765' FROM pais WHERE codigo_iso='URY';
+INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
+ SELECT 3,id_pais,'PASAPORTE','P12345678' FROM pais WHERE codigo_iso='MEX';
+INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
+ SELECT 4,id_pais,'PASAPORTE','P87654321' FROM pais WHERE codigo_iso='MEX';
 
 INSERT INTO usuario_general(id_usuario,identidad_verificada) VALUES (1,TRUE),(2,TRUE);
 INSERT INTO administrador_pais(id_usuario,id_pais)
@@ -61,12 +65,15 @@ INSERT INTO evento_sector(id_evento,id_sector,cupo_habilitado,precio) VALUES
 INSERT INTO asignacion_funcionario_sector(id_funcionario,id_evento,id_sector) VALUES
  (4,1,1),(4,1,2),(4,1,3),(4,1,4);
 
--- Compra de 3 entradas por el usuario 1
+-- Compra de prueba: usuario 1 compra 2 entradas (sector A y sector B)
+-- Nota: se pueden comprar multiples entradas del mismo sector (consigna lo permite)
 DO $$
 DECLARE v BIGINT;
 BEGIN
-    CALL sp_registrar_compra(1, ARRAY[1,1,2]::bigint[], v);
-    RAISE NOTICE 'Venta creada: %', v;
+    CALL sp_registrar_compra(1, ARRAY[1,2]::bigint[], v);
+    CALL sp_confirmar_venta(v, 1);
+    CALL sp_marcar_venta_paga(v, 1);
+    RAISE NOTICE 'Venta creada y pagada: %', v;
 END $$;
 
 -- Token QR de prueba para la entrada 1 (valido hasta 2026-12-31)
