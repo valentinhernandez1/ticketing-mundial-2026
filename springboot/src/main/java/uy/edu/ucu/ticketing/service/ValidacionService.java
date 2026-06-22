@@ -69,26 +69,17 @@ public class ValidacionService {
         // busco el token activo y verifico que el código coincida
         Optional<Map<String, Object>> tokenOpt = validacionRepo.findTokenActivoPorCodigo(idEntrada, codigoToken);
 
-        String resultado;
-        Long idToken = null;
-
         if (tokenOpt.isEmpty()) {
-            resultado = "RECHAZADO";
-        } else {
-            idToken = ((Number) tokenOpt.get().get("id_token")).longValue();
-            resultado = "ACEPTADO";
+            // token inválido o vencido: logueo el intento rechazado con id_token=null
+            validacionRepo.insertarValidacion(idEntrada, null,
+                    idFuncionario, req.idDispositivo(), req.codigoQr(), "RECHAZADO");
+            return "RECHAZADO";
         }
 
-        // si fue rechazado no hay id_token, no puedo insertar la validacion
-        if (idToken != null) {
-            validacionRepo.insertarValidacion(idEntrada, idToken,
-                    idFuncionario, req.idDispositivo(), req.codigoQr(), resultado);
-        }
-
-        if ("ACEPTADO".equals(resultado)) {
-            validacionRepo.consumirEntrada(idEntrada);
-        }
-
-        return resultado;
+        Long idToken = ((Number) tokenOpt.get().get("id_token")).longValue();
+        validacionRepo.insertarValidacion(idEntrada, idToken,
+                idFuncionario, req.idDispositivo(), req.codigoQr(), "ACEPTADO");
+        validacionRepo.consumirEntrada(idEntrada);
+        return "ACEPTADO";
     }
 }

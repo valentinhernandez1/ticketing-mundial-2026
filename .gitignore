@@ -27,3 +27,20 @@ Thumbs.db
 
 # Variables de entorno
 .env
+
+# Archivos temporales de trabajo local
+generar_informe.js
+generar_informe_final.js
+informe_actual.md
+informe_check.md
+check_final.md
+consigna.md
+
+# Dependencias locales (puppeteer para exportar diagramas)
+node_modules/
+package.json
+package-lock.json
+exportar_diagramas.js
+
+# Claude
+.claude/

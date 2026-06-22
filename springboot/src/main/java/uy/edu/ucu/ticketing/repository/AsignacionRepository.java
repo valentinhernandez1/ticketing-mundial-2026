@@ -35,6 +35,7 @@ public class AsignacionRepository {
                 """, Long.class, idFuncionario, idEvento, idSector);
     }
 
+    // Usado por DELETE /api/asignaciones/{id} en AsignacionController
     public void eliminar(Long idAsignacion) {
         jdbc.update("DELETE FROM asignacion_funcionario_sector WHERE id_asignacion = ?", idAsignacion);
     }

@@ -64,10 +64,16 @@ public class TokenRepository {
     }
 
     // confirmo que la entrada sea del usuario antes de darle el QR
+    // BUG FIX: debe retornar estadoVenta para validar que la compra esté PAGA
     public Optional<Map<String, Object>> findEntradaDeUsuario(Long idEntrada, Long idUsuario) {
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                SELECT id_entrada, id_usuario_actual, estado::text
-                FROM entrada WHERE id_entrada = ? AND id_usuario_actual = ?
+                SELECT e.id_entrada,
+                       e.id_usuario_actual,
+                       e.estado::text        AS estado,
+                       v.estado::text        AS estadoVenta
+                FROM entrada e
+                JOIN venta v ON v.id_venta = e.id_venta
+                WHERE e.id_entrada = ? AND e.id_usuario_actual = ?
                 """, idEntrada, idUsuario);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }

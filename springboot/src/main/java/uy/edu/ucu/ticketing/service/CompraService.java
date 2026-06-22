@@ -42,11 +42,6 @@ public class CompraService {
         if (items.size() > 5)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No podés comprar más de 5 entradas por transacción");
 
-        // el trigger detecta duplicados pero el error sería feo; lo atajo acá con mensaje claro
-        if (items.stream().distinct().count() != items.size())
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "No podés comprar dos veces la misma ubicación en una transacción");
-
         // necesito la comision de hoy para calcular el total
         Map<String, Object> comisionRow = comisionRepo.vigente()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
