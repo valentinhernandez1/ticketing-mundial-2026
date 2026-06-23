@@ -26,8 +26,9 @@ export default function QRModal({ entrada, onClose }) {
       })
       setQrDataUrl(url)
       setCountdown(30)
-    } catch {
-      setQrError('No se pudo generar el QR')
+    } catch (err) {
+      // Mostramos el motivo real del backend (ej: "La entrada ya fue consumida")
+      setQrError(err.response?.data?.detalle || err.response?.data?.message || 'No se pudo generar el QR')
     } finally {
       setLoadingQr(false)
     }
