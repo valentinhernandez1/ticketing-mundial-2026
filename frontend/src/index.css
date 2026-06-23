@@ -89,16 +89,28 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #52525b; }
 ::selection { background: rgba(16,185,129,0.25); }
 
-/* ── QR reader overrides ─────────────────────────────────── */
+/* ── QR reader overrides (html5-qrcode v2.3.x) ───────────── */
+/* La lib inyecta inline styles en px — los pisamos con !important */
 #qr-reader { border: none !important; padding: 0 !important; }
-#qr-reader video {
-  border-radius: 0 !important;
+
+/* Forzamos que el section y la scan_region usen el ancho del contenedor */
+#qr-reader section,
+#qr-reader__scan_region {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* El video tiene inline width/height en px desde la cámara — los reseteamos */
+#qr-reader video,
+#qr-reader__scan_region video {
   width: 100% !important;
   height: auto !important;
+  max-height: 360px !important;
   display: block !important;
-  max-height: 360px;
+  border-radius: 0 !important;
   object-fit: cover !important;
 }
-#qr-reader img { display: none !important; }
-#qr-reader__scan_region { background: transparent !important; }
-#qr-reader__dashboard   { display: none !important; }
+
+#qr-reader img                       { display: none !important; }
+#qr-reader__scan_region              { background: transparent !important; }
+#qr-reader__dashboard                { display: none !important; }
