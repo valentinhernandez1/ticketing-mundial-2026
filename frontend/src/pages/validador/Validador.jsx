@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import api from '../../api/client'
 import { ScanLine, CheckCircle, XCircle, Settings, Camera, CameraOff, Type, User } from 'lucide-react'
@@ -18,6 +18,8 @@ export default function Validador() {
   const [errorCamara, setErrorCamara] = useState('')
   const scannerRef = useRef(null)
   const html5QrRef = useRef(null)
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
 
   const saveDevice = () => {
     if (deviceId.trim()) {
@@ -26,26 +28,47 @@ export default function Validador() {
     }
   }
 
+  // Detección QR sobre el video nativo
+  const detectarQR = useCallback(async () => {
+    if (!html5QrRef.current || !videoRef.current) return
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = videoRef.current.videoWidth
+      canvas.height = videoRef.current.videoHeight
+      canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
+      canvas.toBlob(async (blob) => {
+        if (!blob || !html5QrRef.current) return
+        try {
+          const result = await html5QrRef.current.scanFileV2(new File([blob], 'frame.png'), false)
+          if (result?.decodedText) {
+            await detenerCamara()
+            await procesarCodigo(result.decodedText)
+          }
+        } catch { /* frame sin QR */ }
+      }, 'image/png')
+    } catch { /* error de canvas */ }
+  }, [])
+
   const iniciarCamara = async () => {
     setErrorCamara('')
     try {
-      const html5Qr = new Html5Qrcode('qr-reader')
-      html5QrRef.current = html5Qr
-      await html5Qr.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        async (decodedText) => {
-          await detenerCamara()
-          await procesarCodigo(decodedText)
-        },
-        () => {}
-      )
+      // Usamos getUserMedia directamente para controlar el <video> y ver el feed
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } }
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+      // html5-qrcode solo para detección (sin renderizar su propio video)
+      html5QrRef.current = new Html5Qrcode('_qr_hidden_', { verbose: false })
       setEscaneando(true)
     } catch (err) {
       setEscaneando(false)
       const msg = err?.message || String(err)
-      if (msg.includes('permission') || msg.includes('Permission') || msg.includes('NotAllowed')) {
-        setErrorCamara('Permiso de cámara denegado. Andá a Configuración del celular y habilitá la cámara para este sitio.')
+      if (msg.includes('Permission') || msg.includes('NotAllowed') || msg.includes('permission')) {
+        setErrorCamara('Permiso de cámara denegado. Habilitalo en la configuración del navegador.')
       } else {
         setErrorCamara('No se pudo acceder a la cámara. Usá el modo manual.')
       }
@@ -53,12 +76,24 @@ export default function Validador() {
   }
 
   const detenerCamara = async () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+    if (videoRef.current) videoRef.current.srcObject = null
     if (html5QrRef.current) {
-      try { await html5QrRef.current.stop() } catch {}
+      try { await html5QrRef.current.clear() } catch {}
       html5QrRef.current = null
     }
     setEscaneando(false)
   }
+
+  // Loop de detección cada 300ms mientras escanea
+  useEffect(() => {
+    if (!escaneando) return
+    const interval = setInterval(detectarQR, 300)
+    return () => clearInterval(interval)
+  }, [escaneando, detectarQR])
 
   useEffect(() => {
     return () => { detenerCamara() }
@@ -233,16 +268,38 @@ export default function Validador() {
         </div>
       )}
 
+      {/* Contenedor oculto para html5-qrcode — solo para detección, sin UI propia */}
+      <div id="_qr_hidden_" style={{ display: 'none' }} />
+
       {/* MODO CÁMARA */}
       {modo === 'camara' && !resultado && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl">
-          {/* Contenedor del video — sin overflow-hidden para que html5-qrcode muestre el video */}
-          <div className="relative" style={{ minHeight: 300, background: '#000' }}>
-            {/* html5-qrcode inyecta el <video> aquí — necesita w y h explícitos */}
-            <div id="qr-reader" style={{ width: '100%' }} />
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+          <div className="relative bg-black" style={{ minHeight: 300 }}>
+            {/* Video nativo — siempre visible, sin dependencia del renderizado de html5-qrcode */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full block ${escaneando ? '' : 'hidden'}`}
+              style={{ maxHeight: 360, objectFit: 'cover' }}
+            />
+
+            {/* Marco de escaneo encima del video */}
+            {escaneando && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative w-56 h-56">
+                  <span className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-green-400 rounded-tl" />
+                  <span className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-green-400 rounded-tr" />
+                  <span className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-green-400 rounded-bl" />
+                  <span className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-green-400 rounded-br" />
+                  <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-green-400/60 animate-pulse" />
+                </div>
+              </div>
+            )}
 
             {!escaneando && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                 {errorCamara && (
                   <p className="text-red-400 text-sm text-center px-6">{errorCamara}</p>
                 )}
@@ -261,7 +318,7 @@ export default function Validador() {
             {escaneando && (
               <button
                 onClick={detenerCamara}
-                className="absolute top-2 right-2 z-10 bg-zinc-800/80 backdrop-blur text-zinc-300 hover:text-white p-2 rounded-lg"
+                className="absolute top-2 right-2 z-10 bg-black/60 text-zinc-300 hover:text-white p-2 rounded-lg"
               >
                 <CameraOff size={16} />
               </button>
