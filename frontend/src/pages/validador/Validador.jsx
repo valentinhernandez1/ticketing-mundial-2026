@@ -227,8 +227,14 @@ export default function Validador() {
               autoPlay
               playsInline
               muted
-              className={`w-full block ${escaneando ? '' : 'hidden'}`}
-              style={{ maxHeight: 380, objectFit: 'cover' }}
+              style={{
+                width: '100%',
+                minHeight: escaneando ? 280 : 0,
+                maxHeight: 380,
+                display: 'block',
+                objectFit: 'cover',
+                backgroundColor: '#000',
+              }}
             />
 
             {escaneando && (
