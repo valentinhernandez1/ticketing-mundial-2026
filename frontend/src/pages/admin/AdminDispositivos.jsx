@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Smartphone } from 'lucide-react'
-import { getDispositivos, registrarDispositivo, getFuncionarios } from '../../api'
+import api from '../../api/client'
 import Alert from '../../components/ui/Alert'
 import PageHeader from '../../components/ui/PageHeader'
 
@@ -14,7 +14,10 @@ export default function AdminDispositivos() {
 
   const cargar = async () => {
     try {
-      const [d, f] = await Promise.all([getDispositivos(), getFuncionarios()])
+      const [d, f] = await Promise.all([
+        api.get('/dispositivos'),
+        api.get('/consulta/funcionarios'),
+      ])
       setDispositivos(d.data)
       setFuncionarios(f.data)
     } catch {
@@ -31,7 +34,7 @@ export default function AdminDispositivos() {
     setError('')
     setSuccess('')
     try {
-      await registrarDispositivo({
+      await api.post('/dispositivos', {
         identificadorFisico: form.identificadorFisico,
         idFuncionario: Number(form.idFuncionario),
       })
