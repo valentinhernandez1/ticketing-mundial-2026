@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import jsQR from 'jsqr'
 import api from '../../api/client'
 import { ScanLine, CheckCircle, XCircle, Settings, Camera, CameraOff, Type, User } from 'lucide-react'
 
@@ -17,15 +18,8 @@ export default function Validador() {
   const [errorCamara, setErrorCamara] = useState('')
   const videoRef = useRef(null)
   const streamRef = useRef(null)
-  const detectorRef = useRef(null)
+  const canvasRef = useRef(document.createElement('canvas'))
   const procesandoRef = useRef(false)
-
-  // Inicializar BarcodeDetector (API nativa Chrome/Edge)
-  useEffect(() => {
-    if ('BarcodeDetector' in window) {
-      detectorRef.current = new window.BarcodeDetector({ formats: ['qr_code'] })
-    }
-  }, [])
 
   const saveDevice = () => {
     if (deviceId.trim()) {
@@ -59,24 +53,22 @@ export default function Validador() {
     }
   }, [deviceId])
 
-  // Detección QR cada 400ms usando BarcodeDetector sobre el <video>
-  const detectarQR = useCallback(async () => {
-    if (!videoRef.current || !detectorRef.current || procesandoRef.current) return
-    if (videoRef.current.readyState < 2) return  // video no listo aún
-    try {
-      const barcodes = await detectorRef.current.detect(videoRef.current)
-      if (barcodes.length > 0 && barcodes[0].rawValue) {
-        await procesarCodigo(barcodes[0].rawValue)
-      }
-    } catch { /* frame sin QR — normal */ }
+  // Detección QR cada 300ms con jsQR (funciona en todos los browsers)
+  const detectarQR = useCallback(() => {
+    if (!videoRef.current || procesandoRef.current) return
+    if (videoRef.current.readyState < 2 || videoRef.current.videoWidth === 0) return
+    const canvas = canvasRef.current
+    canvas.width = videoRef.current.videoWidth
+    canvas.height = videoRef.current.videoHeight
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    ctx.drawImage(videoRef.current, 0, 0)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(imageData.data, imageData.width, imageData.height)
+    if (code?.data) procesarCodigo(code.data)
   }, [procesarCodigo])
 
   const iniciarCamara = async () => {
     setErrorCamara('')
-    if (!detectorRef.current) {
-      setErrorCamara('Tu browser no soporta BarcodeDetector. Usá Chrome 83+ o el modo manual.')
-      return
-    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
@@ -107,10 +99,10 @@ export default function Validador() {
     setEscaneando(false)
   }
 
-  // Loop de detección
+  // Loop de detección cada 300ms
   useEffect(() => {
     if (!escaneando) return
-    const interval = setInterval(detectarQR, 400)
+    const interval = setInterval(detectarQR, 300)
     return () => clearInterval(interval)
   }, [escaneando, detectarQR])
 
