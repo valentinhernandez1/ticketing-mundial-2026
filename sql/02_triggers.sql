@@ -166,6 +166,21 @@ BEGIN
                   WHERE es.id_evento = NEW.id_evento
                )
            AND activo = TRUE;
+
+        -- Anular las ventas cuyos TODOS los items quedaron anulados por este evento
+        -- (una venta puede tener entradas de distintos eventos; solo anulamos si todas quedaron anuladas)
+        UPDATE venta SET estado = 'ANULADA'
+         WHERE id_venta IN (
+                 SELECT DISTINCT e.id_venta
+                   FROM entrada e
+                   JOIN evento_sector es ON es.id_evento_sector = e.id_evento_sector
+                  WHERE es.id_evento = NEW.id_evento
+               )
+           AND NOT EXISTS (
+                 SELECT 1 FROM entrada e2
+                  WHERE e2.id_venta = venta.id_venta
+                    AND e2.estado <> 'ANULADA'
+               );
     END IF;
     RETURN NEW;
 END;

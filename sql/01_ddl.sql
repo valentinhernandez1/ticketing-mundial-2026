@@ -22,7 +22,7 @@ CREATE DOMAIN dom_estado_entrada AS VARCHAR(12)
 
 DROP DOMAIN IF EXISTS dom_estado_transf CASCADE;
 CREATE DOMAIN dom_estado_transf AS VARCHAR(12)
-    CHECK (VALUE IN ('PENDIENTE','ACEPTADA','RECHAZADA','CANCELADA'));
+    CHECK (VALUE IN ('PENDIENTE','ACEPTADA','RECHAZADA'));
 
 DROP DOMAIN IF EXISTS dom_resultado_val CASCADE;
 CREATE DOMAIN dom_resultado_val AS VARCHAR(10)
@@ -150,7 +150,7 @@ CREATE TABLE dispositivo (
     CONSTRAINT uq_dispositivo_fisico UNIQUE (identificador_fisico),
     CONSTRAINT fk_dispositivo_func   FOREIGN KEY (id_funcionario)
         REFERENCES funcionario_validacion (id_usuario) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT ck_dispositivo_estado CHECK (estado IN ('ACTIVO','INACTIVO','BLOQUEADO'))
+    CONSTRAINT ck_dispositivo_estado CHECK (estado IN ('ACTIVO','INACTIVO'))
 );
 
 -- estadios, sectores y eventos

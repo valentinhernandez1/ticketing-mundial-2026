@@ -40,6 +40,8 @@ END;
 $$;
 
 -- TRANSFERIR ENTRADA (inicia transferencia PENDIENTE)
+-- Bloquea la entrada en estado TRANSFERIDA durante el periodo pendiente para
+-- impedir que el remitente use el QR mientras el destinatario decide.
 CREATE OR REPLACE PROCEDURE sp_transferir_entrada(
     IN  p_id_entrada     BIGINT,
     IN  p_id_destino     BIGINT,
@@ -54,13 +56,15 @@ BEGIN
     IF v_origen IS NULL THEN
         RAISE EXCEPTION 'Entrada % inexistente', p_id_entrada;
     END IF;
-    -- Solo el titular actual puede iniciar la transferencia de SU entrada
     IF v_origen <> p_id_solicitante THEN
         RAISE EXCEPTION 'El usuario % no es el titular de la entrada %', p_id_solicitante, p_id_entrada;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM usuario_general WHERE id_usuario = p_id_destino) THEN
         RAISE EXCEPTION 'El destino % no es un usuario general valido', p_id_destino;
     END IF;
+
+    -- Bloquear la entrada para que no se pueda usar el QR durante la transferencia pendiente
+    UPDATE entrada SET estado = 'TRANSFERIDA' WHERE id_entrada = p_id_entrada;
 
     -- Las validaciones de limite (3), titularidad y estado las aplica el trigger
     INSERT INTO transferencia(id_entrada, id_usuario_origen, id_usuario_destino, estado)

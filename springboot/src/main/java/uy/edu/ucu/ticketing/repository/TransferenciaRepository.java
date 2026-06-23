@@ -40,28 +40,9 @@ public class TransferenciaRepository {
         return count != null && count > 0;
     }
 
-    public Long iniciarTransferencia(Long idEntrada, Long idOrigen, Long idDestino) {
-        // Marcar TRANSFERIDA para bloquear el QR mientras la transferencia está pendiente
-        jdbc.update("UPDATE entrada SET estado = 'TRANSFERIDA' WHERE id_entrada = ?", idEntrada);
-        return jdbc.queryForObject("""
-                INSERT INTO transferencia (id_entrada, id_usuario_origen, id_usuario_destino, estado)
-                VALUES (?, ?, ?, 'PENDIENTE')
-                RETURNING id_transferencia
-                """, Long.class, idEntrada, idOrigen, idDestino);
-    }
-
-    // El trigger fn_transferencia_aceptar cambia el titular y restaura estado='EMITIDA'
-    public void marcarAceptada(Long idTransferencia) {
-        jdbc.update("""
-                UPDATE transferencia
-                SET estado = 'ACEPTADA', fecha_aceptacion = NOW()
-                WHERE id_transferencia = ?
-                """, idTransferencia);
-    }
-
+    // Devuelve la entrada a EMITIDA si el destinatario rechaza la transferencia
     public void marcarRechazada(Long idTransferencia, Long idEntrada) {
         jdbc.update("UPDATE transferencia SET estado = 'RECHAZADA' WHERE id_transferencia = ?", idTransferencia);
-        // Devolver la entrada a EMITIDA para que el remitente vuelva a poder usarla
         jdbc.update("UPDATE entrada SET estado = 'EMITIDA' WHERE id_entrada = ?", idEntrada);
     }
 

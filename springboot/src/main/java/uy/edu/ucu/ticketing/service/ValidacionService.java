@@ -1,12 +1,15 @@
 package uy.edu.ucu.ticketing.service;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import uy.edu.ucu.ticketing.dto.ValidacionRequest;
 import uy.edu.ucu.ticketing.repository.ValidacionRepository;
 
+import java.sql.CallableStatement;
+import java.sql.Types;
 import java.util.Map;
 import java.util.Optional;
 
@@ -14,14 +17,16 @@ import java.util.Optional;
 public class ValidacionService {
 
     private final ValidacionRepository validacionRepo;
+    private final JdbcTemplate jdbc;
 
-    public ValidacionService(ValidacionRepository validacionRepo) {
+    public ValidacionService(ValidacionRepository validacionRepo, JdbcTemplate jdbc) {
         this.validacionRepo = validacionRepo;
+        this.jdbc = jdbc;
     }
 
     @Transactional
     public String validar(Long idFuncionario, ValidacionRequest req) {
-        // el QR codifica "{idEntrada}:{codigoToken}", lo parseo acá
+        // El QR codifica "{idEntrada}:{codigoToken}"
         String[] partes = req.codigoQr().split(":", 2);
         if (partes.length != 2)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -36,7 +41,7 @@ public class ValidacionService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID de entrada inválido en el QR");
         }
 
-        // verifico que el dispositivo exista y esté activo
+        // Verificación previa del dispositivo para dar mensajes de error claros al cliente
         var disp = validacionRepo.findDispositivo(req.idDispositivo())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dispositivo no registrado"));
 
@@ -47,39 +52,26 @@ public class ValidacionService {
         if (!idFuncDisp.equals(idFuncionario))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Este dispositivo no es tuyo");
 
-        // busco la entrada
-        Map<String, Object> entrada = validacionRepo.findEntrada(idEntrada)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entrada no encontrada"));
-
-        if ("CONSUMIDA".equals(entrada.get("estado")))
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "La entrada ya fue consumida");
-
-        // verifico que el funcionario esté asignado al sector
-        Map<String, Object> es = validacionRepo.findEventoSectorDeEntrada(
-                ((Number) entrada.get("id_evento_sector")).longValue())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sector no encontrado"));
-
-        Long idEvento = ((Number) es.get("id_evento")).longValue();
-        Long idSector = ((Number) es.get("id_sector")).longValue();
-
-        if (!validacionRepo.funcionarioAsignadoAlSector(idFuncionario, idEvento, idSector))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "No estás asignado al sector de esta entrada");
-
-        // busco el token activo y verifico que el código coincida
+        // Buscar el token activo por código (puede ser null si el token venció o es inválido)
         Optional<Map<String, Object>> tokenOpt = validacionRepo.findTokenActivoPorCodigo(idEntrada, codigoToken);
+        Long idToken = tokenOpt.map(t -> ((Number) t.get("id_token")).longValue()).orElse(null);
 
-        if (tokenOpt.isEmpty()) {
-            // token inválido o vencido: logueo el intento rechazado con id_token=null
-            validacionRepo.insertarValidacion(idEntrada, null,
-                    idFuncionario, req.idDispositivo(), req.codigoQr(), "RECHAZADO");
-            return "RECHAZADO";
-        }
+        // sp_validar_acceso maneja ACEPTADO y RECHAZADO con su handler de excepción:
+        // - Si es ACEPTADO: el trigger fn_validacion_before valida todo; fn_validacion_after consume la entrada
+        // - Si falla: el handler inserta un registro RECHAZADO para auditoría y retorna 'RECHAZADO: motivo'
+        String resultado = jdbc.execute((java.sql.Connection conn) -> {
+            try (CallableStatement cs = conn.prepareCall("{ CALL sp_validar_acceso(?, ?, ?, ?, ?) }")) {
+                cs.setLong(1, idEntrada);
+                if (idToken != null) cs.setLong(2, idToken); else cs.setNull(2, Types.BIGINT);
+                cs.setLong(3, idFuncionario);
+                cs.setLong(4, req.idDispositivo());
+                cs.registerOutParameter(5, Types.VARCHAR);
+                cs.execute();
+                return cs.getString(5);
+            }
+        });
 
-        Long idToken = ((Number) tokenOpt.get().get("id_token")).longValue();
-        validacionRepo.insertarValidacion(idEntrada, idToken,
-                idFuncionario, req.idDispositivo(), req.codigoQr(), "ACEPTADO");
-        validacionRepo.consumirEntrada(idEntrada);
-        return "ACEPTADO";
+        // El SP retorna 'ACEPTADO' o 'RECHAZADO: motivo...' — normalizamos a solo la palabra clave
+        return resultado != null && resultado.startsWith("ACEPTADO") ? "ACEPTADO" : "RECHAZADO";
     }
 }
