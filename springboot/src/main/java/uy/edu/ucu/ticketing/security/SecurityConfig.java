@@ -2,6 +2,7 @@ package uy.edu.ucu.ticketing.security;
 
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -48,6 +49,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/comisiones").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/comisiones").hasRole("ADMINISTRADOR_PAIS")
                 .anyRequest().authenticated())
+            .exceptionHandling(ex -> ex
+                // 401 cuando el token falta o expiró (sin esto Spring devuelve 403)
+                .authenticationEntryPoint((req, res, e) -> {
+                    res.setStatus(401);
+                    res.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    res.getWriter().write("{\"error\":\"NO_AUTORIZADO\",\"detalle\":\"Sesion expirada. Volvé a ingresar.\"}");
+                })
+            )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
