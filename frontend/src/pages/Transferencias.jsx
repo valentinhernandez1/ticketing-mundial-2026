@@ -274,9 +274,8 @@ export default function Transferencias() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800">
-                  <th className="text-left text-xs text-zinc-500 font-semibold uppercase tracking-wider px-4 py-3">ID</th>
                   <th className="text-left text-xs text-zinc-500 font-semibold uppercase tracking-wider px-4 py-3">Entrada</th>
-                  <th className="text-left text-xs text-zinc-500 font-semibold uppercase tracking-wider px-4 py-3">Dirección</th>
+                  <th className="text-left text-xs text-zinc-500 font-semibold uppercase tracking-wider px-4 py-3">Movimiento</th>
                   <th className="text-left text-xs text-zinc-500 font-semibold uppercase tracking-wider px-4 py-3">Estado</th>
                   <th className="text-left text-xs text-zinc-500 font-semibold uppercase tracking-wider px-4 py-3">Fecha</th>
                 </tr>
@@ -284,19 +283,27 @@ export default function Transferencias() {
               <tbody>
                 {historial.map((t, i) => {
                   const esEnviada = (t.idOrigen ?? t.id_usuario_origen) === user.id
+                  const contraparte = esEnviada
+                    ? (t.emailDestino || `usuario #${t.idDestino ?? t.id_usuario_destino}`)
+                    : (t.emailOrigen  || `usuario #${t.idOrigen  ?? t.id_usuario_origen}`)
                   return (
                     <tr key={t.idTransferencia ?? i} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
-                      <td className="px-4 py-3 font-mono text-zinc-500 text-xs">#{t.idTransferencia}</td>
-                      <td className="px-4 py-3 text-zinc-300">#{t.idEntrada}</td>
+                      <td className="px-4 py-3 text-zinc-300 font-medium">#{t.idEntrada}</td>
                       <td className="px-4 py-3">
                         {esEnviada ? (
-                          <span className="flex items-center gap-1 text-orange-400 text-xs font-medium">
-                            <ArrowRight size={12} /> Enviada
-                          </span>
+                          <div>
+                            <span className="flex items-center gap-1 text-orange-400 text-xs font-medium mb-0.5">
+                              <ArrowRight size={11} /> Enviada a
+                            </span>
+                            <span className="text-zinc-400 text-xs">{contraparte}</span>
+                          </div>
                         ) : (
-                          <span className="flex items-center gap-1 text-blue-400 text-xs font-medium">
-                            <ArrowLeft size={12} /> Recibida
-                          </span>
+                          <div>
+                            <span className="flex items-center gap-1 text-blue-400 text-xs font-medium mb-0.5">
+                              <ArrowLeft size={11} /> Recibida de
+                            </span>
+                            <span className="text-zinc-400 text-xs">{contraparte}</span>
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3">
