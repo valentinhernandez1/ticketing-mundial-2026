@@ -14,20 +14,24 @@ INSERT INTO seleccion(nombre,codigo_fifa) VALUES
 -- Comision vigente (5%)
 INSERT INTO comision(porcentaje,fecha_inicio,fecha_fin) VALUES (5.00,'2026-01-01',NULL);
 
--- Direcciones + usuarios
+-- Direcciones para todos los usuarios (incluida la del funcionario)
 INSERT INTO direccion(id_pais,localidad,calle,numero,codigo_postal)
- SELECT id_pais,'Montevideo','18 de Julio','1234','11200' FROM pais WHERE codigo_iso='URY';
+ SELECT id_pais,'Montevideo','18 de Julio','1234','11200' FROM pais WHERE codigo_iso='URY';   -- id=1
 INSERT INTO direccion(id_pais,localidad,calle,numero,codigo_postal)
- SELECT id_pais,'Montevideo','Rivera','5678','11300' FROM pais WHERE codigo_iso='URY';
+ SELECT id_pais,'Montevideo','Rivera','5678','11300' FROM pais WHERE codigo_iso='URY';         -- id=2
 INSERT INTO direccion(id_pais,localidad,calle,numero,codigo_postal)
- SELECT id_pais,'Ciudad de Mexico','Reforma','100','06000' FROM pais WHERE codigo_iso='MEX';
+ SELECT id_pais,'Ciudad de Mexico','Reforma','100','06000' FROM pais WHERE codigo_iso='MEX';   -- id=3
+INSERT INTO direccion(id_pais,localidad,calle,numero,codigo_postal)
+ SELECT id_pais,'Ciudad de Mexico','Insurgentes','200','06010' FROM pais WHERE codigo_iso='MEX'; -- id=4
 
--- Contrasena de todos los usuarios de demo: "test1234" (bcrypt via pgcrypto)
+-- Todos los usuarios de demo (contrasena: "test1234")
 INSERT INTO usuario(email,nombre,apellido,id_direccion,password_hash) VALUES
- ('valentin@ucu.edu.uy','Valentin','Perez',1, crypt('test1234', gen_salt('bf'))),
- ('ana@ucu.edu.uy','Ana','Gomez',2,            crypt('test1234', gen_salt('bf'))),
- ('admin.mex@fifa.org','Carlos','Ruiz',3,       crypt('test1234', gen_salt('bf')));
+ ('valentin@ucu.edu.uy','Valentin','Perez',1, crypt('test1234', gen_salt('bf'))),    -- id=1
+ ('ana@ucu.edu.uy','Ana','Gomez',2,            crypt('test1234', gen_salt('bf'))),    -- id=2
+ ('admin.mex@fifa.org','Carlos','Ruiz',3,       crypt('test1234', gen_salt('bf'))),   -- id=3
+ ('func@fifa.org','Luis','Diaz',4,              crypt('test1234', gen_salt('bf')));   -- id=4
 
+-- Documentos (ahora todos los usuarios ya existen)
 INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
  SELECT 1,id_pais,'CI','55512345' FROM pais WHERE codigo_iso='URY';
 INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
@@ -37,14 +41,10 @@ INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
 INSERT INTO documento(id_usuario,id_pais,tipo_documento,numero)
  SELECT 4,id_pais,'PASAPORTE','P87654321' FROM pais WHERE codigo_iso='MEX';
 
+-- Subtipos de usuario
 INSERT INTO usuario_general(id_usuario,identidad_verificada) VALUES (1,TRUE),(2,TRUE);
 INSERT INTO administrador_pais(id_usuario,id_pais)
  SELECT 3,id_pais FROM pais WHERE codigo_iso='MEX';
-
--- Funcionario de validacion (direccion propia para evitar conflicto de UNIQUE)
-INSERT INTO direccion(id_pais,localidad,calle,numero,codigo_postal)
- SELECT id_pais,'Ciudad de Mexico','Insurgentes','200','06010' FROM pais WHERE codigo_iso='MEX';
-INSERT INTO usuario(email,nombre,apellido,id_direccion,password_hash) VALUES ('func@fifa.org','Luis','Diaz',4, crypt('test1234', gen_salt('bf')));
 INSERT INTO funcionario_validacion(id_usuario,numero_legajo) VALUES (4,'LEG-001');
 INSERT INTO dispositivo(identificador_fisico,id_funcionario) VALUES ('SCAN-AZTECA-01',4);
 
@@ -54,19 +54,17 @@ INSERT INTO estadio(nombre,id_pais,ciudad,direccion)
 INSERT INTO sector(id_estadio,nombre_sector,capacidad_maxima,precio_base) VALUES
  (1,'A',100,300.00),(1,'B',100,200.00),(1,'C',150,120.00),(1,'D',200,80.00);
 
--- Evento (alta por el administrador id_usuario=3)
+-- Evento (alta por el administrador id_usuario=3) — fecha futura para poder probarlo
 INSERT INTO evento(id_estadio,id_seleccion_local,id_seleccion_visitante,fecha_hora_inicio,id_administrador)
- VALUES (1,1,2,'2026-06-20 18:00-03',3);
+ VALUES (1,1,2,'2026-07-15 18:00:00-03',3);
 INSERT INTO evento_sector(id_evento,id_sector,cupo_habilitado,precio) VALUES
  (1,1,100,300.00),(1,2,100,200.00),(1,3,150,120.00),(1,4,200,80.00);
 
--- Asignacion del funcionario a los sectores A y B del evento 1
--- (necesario para que el trigger de validacion permita el ingreso)
+-- Asignacion del funcionario a todos los sectores del evento
 INSERT INTO asignacion_funcionario_sector(id_funcionario,id_evento,id_sector) VALUES
  (4,1,1),(4,1,2),(4,1,3),(4,1,4);
 
 -- Compra de prueba: usuario 1 compra 2 entradas (sector A y sector B)
--- Nota: se pueden comprar multiples entradas del mismo sector (consigna lo permite)
 DO $$
 DECLARE v BIGINT;
 BEGIN
