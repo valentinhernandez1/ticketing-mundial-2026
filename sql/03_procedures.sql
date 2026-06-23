@@ -507,6 +507,21 @@ END;
 $$;
 
 -- LISTAR LAS COMPRAS (VENTAS) DE UN USUARIO
+-- WRAPPER para llamar sp_validar_acceso desde JDBC con queryForObject
+-- El driver JDBC no maneja bien CALL con OUT params en PostgreSQL; usar SELECT sobre función es más limpio.
+CREATE OR REPLACE FUNCTION fn_validar_acceso_wrapper(
+    p_id_entrada     BIGINT,
+    p_id_token       BIGINT,
+    p_id_funcionario BIGINT,
+    p_id_dispositivo BIGINT
+) RETURNS VARCHAR LANGUAGE plpgsql AS $$
+DECLARE v_resultado VARCHAR;
+BEGIN
+    CALL sp_validar_acceso(p_id_entrada, p_id_token, p_id_funcionario, p_id_dispositivo, v_resultado);
+    RETURN v_resultado;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION fn_compras_usuario(p_id_usuario BIGINT)
 RETURNS TABLE (
     id_venta     BIGINT,

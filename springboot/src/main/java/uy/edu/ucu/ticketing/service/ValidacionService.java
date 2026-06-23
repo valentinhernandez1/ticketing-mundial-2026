@@ -8,8 +8,6 @@ import org.springframework.web.server.ResponseStatusException;
 import uy.edu.ucu.ticketing.dto.ValidacionRequest;
 import uy.edu.ucu.ticketing.repository.ValidacionRepository;
 
-import java.sql.CallableStatement;
-import java.sql.Types;
 import java.util.Map;
 import java.util.Optional;
 
@@ -56,22 +54,19 @@ public class ValidacionService {
         Optional<Map<String, Object>> tokenOpt = validacionRepo.findTokenActivoPorCodigo(idEntrada, codigoToken);
         Long idToken = tokenOpt.map(t -> ((Number) t.get("id_token")).longValue()).orElse(null);
 
-        // sp_validar_acceso maneja ACEPTADO y RECHAZADO con su handler de excepción:
-        // - Si es ACEPTADO: el trigger fn_validacion_before valida todo; fn_validacion_after consume la entrada
-        // - Si falla: el handler inserta un registro RECHAZADO para auditoría y retorna 'RECHAZADO: motivo'
-        String resultado = jdbc.execute((java.sql.Connection conn) -> {
-            try (CallableStatement cs = conn.prepareCall("{ CALL sp_validar_acceso(?, ?, ?, ?, ?) }")) {
-                cs.setLong(1, idEntrada);
-                if (idToken != null) cs.setLong(2, idToken); else cs.setNull(2, Types.BIGINT);
-                cs.setLong(3, idFuncionario);
-                cs.setLong(4, req.idDispositivo());
-                cs.registerOutParameter(5, Types.VARCHAR);
-                cs.execute();
-                return cs.getString(5);
-            }
-        });
+        // fn_validar_acceso_wrapper llama a sp_validar_acceso internamente.
+        // Usamos SELECT sobre una función en vez de CALL directo porque el driver JDBC
+        // de PostgreSQL no maneja bien los parámetros OUT en procedimientos vía CallableStatement.
+        String resultado = jdbc.queryForObject(
+                "SELECT fn_validar_acceso_wrapper(?, ?, ?, ?)",
+                String.class,
+                idEntrada,
+                idToken,    // puede ser NULL si el token no existe o venció
+                idFuncionario,
+                req.idDispositivo()
+        );
 
-        // El SP retorna 'ACEPTADO' o 'RECHAZADO: motivo...' — normalizamos a solo la palabra clave
+        // La función retorna 'ACEPTADO' o 'RECHAZADO: motivo...' → normalizamos
         return resultado != null && resultado.startsWith("ACEPTADO") ? "ACEPTADO" : "RECHAZADO";
     }
 }
