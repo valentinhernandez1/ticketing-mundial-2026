@@ -91,6 +91,14 @@ body {
 
 /* ── QR reader overrides ─────────────────────────────────── */
 #qr-reader { border: none !important; padding: 0 !important; }
-#qr-reader video { border-radius: 0 !important; }
+#qr-reader video {
+  border-radius: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  max-height: 360px;
+  object-fit: cover !important;
+}
+#qr-reader img { display: none !important; }
 #qr-reader__scan_region { background: transparent !important; }
 #qr-reader__dashboard   { display: none !important; }

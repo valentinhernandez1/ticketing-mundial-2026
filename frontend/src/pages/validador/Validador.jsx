@@ -235,13 +235,16 @@ export default function Validador() {
 
       {/* MODO CÁMARA */}
       {modo === 'camara' && !resultado && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-          <div className="relative bg-black" style={{ minHeight: 280 }}>
-            <div id="qr-reader" className="w-full" />
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl">
+          {/* Contenedor del video — sin overflow-hidden para que html5-qrcode muestre el video */}
+          <div className="relative" style={{ minHeight: 300, background: '#000' }}>
+            {/* html5-qrcode inyecta el <video> aquí — necesita w y h explícitos */}
+            <div id="qr-reader" style={{ width: '100%' }} />
+
             {!escaneando && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80">
                 {errorCamara && (
-                  <p className="text-red-400 text-sm text-center px-4">{errorCamara}</p>
+                  <p className="text-red-400 text-sm text-center px-6">{errorCamara}</p>
                 )}
                 <button
                   onClick={iniciarCamara}
@@ -254,22 +257,22 @@ export default function Validador() {
                 {!deviceId && <p className="text-xs text-yellow-500">Configurá el dispositivo primero</p>}
               </div>
             )}
+
             {escaneando && (
-              <div className="absolute top-2 right-2">
-                <button
-                  onClick={detenerCamara}
-                  className="bg-zinc-800/80 backdrop-blur text-zinc-300 hover:text-white p-2 rounded-lg"
-                >
-                  <CameraOff size={16} />
-                </button>
-              </div>
+              <button
+                onClick={detenerCamara}
+                className="absolute top-2 right-2 z-10 bg-zinc-800/80 backdrop-blur text-zinc-300 hover:text-white p-2 rounded-lg"
+              >
+                <CameraOff size={16} />
+              </button>
             )}
           </div>
+
           {escaneando && (
-            <div className="p-4 text-center">
+            <div className="p-3 text-center border-t border-zinc-800">
               <div className="flex items-center justify-center gap-2 text-green-400 text-sm font-medium">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                Esperando código QR...
+                Apuntá la cámara al QR...
               </div>
             </div>
           )}
