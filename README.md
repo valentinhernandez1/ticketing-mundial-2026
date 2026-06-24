@@ -31,7 +31,7 @@ El sistema maneja el ciclo de vida completo de una entrada: compra en hasta 5 bo
 - Tailwind CSS 3
 - React Router v6
 - Axios (con interceptor para 401 → /login)
-- html5-qrcode (escaneo con cámara)
+- jsQR + Canvas API (escaneo QR con cámara via getUserMedia)
 - qrcode (generación visual del QR)
 
 ### Base de Datos
@@ -293,6 +293,7 @@ El proyecto funciona con los defaults de `application.yml`. Solo hace falta camb
 | GET | `/api/usuarios/{id}/compras` | Historial con detalle de entradas |
 | GET | `/api/usuarios/{id}/entradas` | Entradas actuales |
 | GET | `/api/usuarios/{id}/transferencias` | Historial de transferencias |
+| GET | `/api/usuarios/{id}/entradas/{idEntrada}/historial` | Log completo de una entrada (emisión → transferencias → validación) |
 | POST | `/api/entradas/{id}/token` | Generar token QR (35 segundos) |
 | POST | `/api/transferencias` | Iniciar transferencia |
 | POST | `/api/transferencias/{id}/aceptar` | Aceptar |
@@ -308,6 +309,7 @@ El proyecto funciona con los defaults de `application.yml`. Solo hace falta camb
 |--------|------|-------------|
 | POST | `/api/estadios` | Crear estadio |
 | POST | `/api/estadios/{id}/sectores` | Agregar sector |
+| GET | `/api/eventos` | Listar todos los eventos (todos los estados) |
 | POST | `/api/eventos` | Programar partido |
 | POST | `/api/eventos/{id}/sectores` | Habilitar sector en evento |
 | POST | `/api/eventos/{id}/cancelar` | Cancelar evento |
@@ -376,8 +378,8 @@ npm test
 
 **Limitaciones conocidas:**
 - El pago es simbólico — botón "Pagar" sin integración con gateway real
-- No hay notificaciones por email al aceptar o rechazar transferencias
-- `identidad_verificada` existe en la BD pero no hay flujo de verificación implementado (diseñado para integración KYC futura)
+- Sin notificaciones por email (la consigna no las requiere; las transferencias pendientes son visibles en la pantalla del usuario)
+- `identidad_verificada` existe en la BD como requiere la consigna; el flujo de verificación KYC está fuera del alcance del obligatorio
 
 ---
 
