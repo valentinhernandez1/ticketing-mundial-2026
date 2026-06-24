@@ -232,7 +232,6 @@ CREATE TRIGGER trg_transferencia_before
     FOR EACH ROW EXECUTE FUNCTION fn_transferencia_before();
 
 -- Al aceptar: cambia titular, restaura estado a EMITIDA e incrementa contador.
--- BUG FIX: estaba en 'TRANSFERIDA' — el nuevo titular no podía usar el QR.
 -- El estado 'TRANSFERIDA' solo aplica mientras la transferencia está PENDIENTE.
 -- Una vez aceptada, la entrada pasa a 'EMITIDA' para el nuevo titular.
 CREATE OR REPLACE FUNCTION fn_transferencia_aceptar()

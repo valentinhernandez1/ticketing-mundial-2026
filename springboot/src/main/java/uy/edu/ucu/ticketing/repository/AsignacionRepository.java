@@ -18,9 +18,11 @@ public class AsignacionRepository {
         return jdbc.queryForList("""
                 SELECT a.id_asignacion, a.id_funcionario, a.id_evento, a.id_sector,
                        u.nombre AS funcionario_nombre, u.apellido AS funcionario_apellido,
+                       fv.numero_legajo,
                        s.nombre_sector::text AS sector
                 FROM asignacion_funcionario_sector a
                 JOIN usuario u ON u.id_usuario = a.id_funcionario
+                JOIN funcionario_validacion fv ON fv.id_usuario = a.id_funcionario
                 JOIN sector s ON s.id_sector = a.id_sector
                 WHERE a.id_evento = ?
                 ORDER BY s.nombre_sector

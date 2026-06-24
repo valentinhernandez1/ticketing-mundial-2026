@@ -60,7 +60,7 @@ export default function AdminEventos() {
     try {
       const [cRes, eRes] = await Promise.all([
         api.get('/consulta/catalogos'),
-        api.get('/consulta/eventos'),
+        api.get('/eventos'),
       ])
       setCatalogos(cRes.data)
       setEventos(eRes.data)

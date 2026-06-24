@@ -1,7 +1,9 @@
 package uy.edu.ucu.ticketing.service;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import uy.edu.ucu.ticketing.repository.ComisionRepository;
 
 import java.math.BigDecimal;
@@ -25,6 +27,9 @@ public class ComisionService {
 
     @Transactional
     public Long crear(BigDecimal porcentaje, LocalDate fechaInicio) {
+        if (fechaInicio.isBefore(LocalDate.now()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La fecha de inicio no puede ser anterior a hoy");
         return comisionRepo.insertar(porcentaje, fechaInicio);
     }
 }

@@ -20,7 +20,7 @@ public class AdministradorPaisRepository {
     public List<Map<String, Object>> findAll() {
         return jdbc.queryForList("""
                 SELECT u.id_usuario, u.nombre, u.apellido, u.email::text AS email,
-                       p.nombre AS pais_sede, a.fecha_asignacion
+                       p.nombre AS "paisSede", a.fecha_asignacion
                 FROM administrador_pais a
                 JOIN usuario u ON u.id_usuario = a.id_usuario
                 JOIN pais p ON p.id_pais = a.id_pais

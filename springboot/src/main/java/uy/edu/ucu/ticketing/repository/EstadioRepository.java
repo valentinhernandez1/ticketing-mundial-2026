@@ -28,10 +28,9 @@ public class EstadioRepository {
                 .map(r -> ((Number) r.get("id_pais")).intValue());
     }
 
-    public Long insertar(String nombre, Integer idPais, String ciudad, String direccion) {
-        return jdbc.queryForObject("""
-                INSERT INTO estadio (nombre, id_pais, ciudad, direccion)
-                VALUES (?, ?, ?, ?) RETURNING id_estadio
-                """, Long.class, nombre, idPais, ciudad, direccion);
+    public Long insertar(Long idAdmin, String nombre, Integer idPais, String ciudad, String direccion) {
+        return jdbc.queryForObject(
+                "SELECT fn_crear_estadio_wrapper(?, ?, ?, ?, ?)",
+                Long.class, idAdmin, nombre, idPais, ciudad, direccion);
     }
 }

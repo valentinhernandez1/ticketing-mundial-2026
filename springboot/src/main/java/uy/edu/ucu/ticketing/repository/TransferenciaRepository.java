@@ -2,6 +2,8 @@ package uy.edu.ucu.ticketing.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import uy.edu.ucu.ticketing.model.Transferencia;
+import uy.edu.ucu.ticketing.model.enums.EstadoTransferencia;
 
 import java.util.List;
 import java.util.Map;
@@ -16,34 +18,28 @@ public class TransferenciaRepository {
         this.jdbc = jdbc;
     }
 
-    public Optional<Map<String, Object>> findEntrada(Long idEntrada) {
-        List<Map<String, Object>> rows = jdbc.queryForList("""
-                SELECT id_entrada, id_usuario_actual, estado::text, cantidad_transferencias
-                FROM entrada WHERE id_entrada = ?
-                """, idEntrada);
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
-    }
-
-    public Optional<Map<String, Object>> findById(Long idTransferencia) {
-        List<Map<String, Object>> rows = jdbc.queryForList("""
+    public Optional<Transferencia> findById(Long idTransferencia) {
+        List<Transferencia> rows = jdbc.query("""
                 SELECT id_transferencia, id_entrada, id_usuario_origen,
                        id_usuario_destino, estado::text AS estado
                 FROM transferencia WHERE id_transferencia = ?
-                """, idTransferencia);
+                """,
+                (rs, i) -> {
+                    Transferencia t = new Transferencia();
+                    t.setId(rs.getLong("id_transferencia"));
+                    t.setIdEntrada(rs.getLong("id_entrada"));
+                    t.setIdUsuarioOrigen(rs.getLong("id_usuario_origen"));
+                    t.setIdUsuarioDestino(rs.getLong("id_usuario_destino"));
+                    t.setEstado(EstadoTransferencia.valueOf(rs.getString("estado")));
+                    return t;
+                }, idTransferencia);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    public boolean tienePendiente(Long idEntrada) {
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM transferencia WHERE id_entrada = ? AND estado = 'PENDIENTE'",
-                Integer.class, idEntrada);
-        return count != null && count > 0;
-    }
-
-    // Devuelve la entrada a EMITIDA si el destinatario rechaza la transferencia
     public void marcarRechazada(Long idTransferencia, Long idEntrada) {
         jdbc.update("UPDATE transferencia SET estado = 'RECHAZADA' WHERE id_transferencia = ?", idTransferencia);
-        jdbc.update("UPDATE entrada SET estado = 'EMITIDA' WHERE id_entrada = ?", idEntrada);
+        // Solo restaura a EMITIDA si la entrada sigue en TRANSFERIDA (guarda contra race condition)
+        jdbc.update("UPDATE entrada SET estado = 'EMITIDA' WHERE id_entrada = ? AND estado = 'TRANSFERIDA'", idEntrada);
     }
 
     public List<Map<String, Object>> transferenciasDeUsuario(Long idUsuario) {

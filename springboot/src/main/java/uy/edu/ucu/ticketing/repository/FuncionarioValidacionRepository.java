@@ -19,7 +19,7 @@ public class FuncionarioValidacionRepository {
     public List<Map<String, Object>> findAll() {
         return jdbc.queryForList("""
                 SELECT u.id_usuario, u.nombre, u.apellido, u.email::text AS email,
-                       fv.numero_legajo
+                       fv.numero_legajo AS "numeroLegajo"
                 FROM funcionario_validacion fv
                 JOIN usuario u ON u.id_usuario = fv.id_usuario
                 ORDER BY u.apellido

@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/paises").permitAll()
                 .requestMatchers("/api/compras/**").hasRole("USUARIO_GENERAL")
-                // cualquier usuario autenticado puede recibir o ver transferencias
+                // @PreAuthorize en TransferenciaController restringe a USUARIO_GENERAL
                 .requestMatchers("/api/transferencias/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/usuarios/admins").hasRole("ADMINISTRADOR_PAIS")
                 .requestMatchers(HttpMethod.GET, "/api/usuarios/funcionarios").hasRole("ADMINISTRADOR_PAIS")

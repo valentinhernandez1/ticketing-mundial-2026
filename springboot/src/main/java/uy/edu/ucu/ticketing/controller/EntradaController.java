@@ -61,6 +61,8 @@ public class EntradaController {
                                                @PathVariable Long idEntrada,
                                                @AuthenticationPrincipal Long uid) {
         verificarPropietario(id, uid);
+        if (!entradaService.perteneceAlUsuario(idEntrada, uid))
+            throw new AccessDeniedException("No podés ver el historial de esta entrada");
         return auditoriaService.historialEntrada(idEntrada);
     }
 }

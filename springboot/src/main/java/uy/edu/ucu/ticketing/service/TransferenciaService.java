@@ -6,11 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import uy.edu.ucu.ticketing.dto.TransferenciaRequest;
+import uy.edu.ucu.ticketing.model.Transferencia;
+import uy.edu.ucu.ticketing.model.Usuario;
+import uy.edu.ucu.ticketing.model.enums.EstadoTransferencia;
 import uy.edu.ucu.ticketing.repository.TransferenciaRepository;
 import uy.edu.ucu.ticketing.repository.UsuarioRepository;
 
-import java.sql.CallableStatement;
-import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 
@@ -31,67 +32,51 @@ public class TransferenciaService {
 
     @Transactional
     public Long iniciar(Long idSolicitante, TransferenciaRequest req) {
-        Map<String, Object> destino = usuarioRepo.findByEmail(req.emailDestino())
+        Usuario destino = usuarioRepo.findByEmail(req.emailDestino())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No existe un usuario con el email: " + req.emailDestino()));
-        Long idDestino = ((Number) destino.get("id_usuario")).longValue();
 
-        if (idDestino.equals(idSolicitante))
+        if (destino.getId().equals(idSolicitante))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No podés transferirte la entrada a vos mismo");
 
-        // sp_transferir_entrada valida titularidad, límite de 3, pendientes duplicados,
-        // que el destino sea USUARIO_GENERAL, y bloquea la entrada en TRANSFERIDA
-        return jdbc.execute((java.sql.Connection conn) -> {
-            try (CallableStatement cs = conn.prepareCall("{ CALL sp_transferir_entrada(?, ?, ?, ?) }")) {
-                cs.setLong(1, req.idEntrada());
-                cs.setLong(2, idDestino);
-                cs.setLong(3, idSolicitante);
-                cs.registerOutParameter(4, Types.BIGINT);
-                cs.execute();
-                return cs.getLong(4);
-            }
-        });
+        // fn_transferir_entrada_wrapper llama internamente a sp_transferir_entrada:
+        // valida titularidad, límite de 3, pendientes duplicados, que el destino sea
+        // USUARIO_GENERAL, y bloquea la entrada en TRANSFERIDA.
+        // Usamos SELECT sobre función porque el driver JDBC no soporta CALL con OUT params.
+        return jdbc.queryForObject(
+                "SELECT fn_transferir_entrada_wrapper(?, ?, ?)",
+                Long.class,
+                req.idEntrada(), destino.getId(), idSolicitante
+        );
     }
 
     @Transactional
     public void aceptar(Long idTransferencia, Long idSolicitante) {
-        // Validación previa para dar mensaje descriptivo al cliente
-        Map<String, Object> t = transferenciaRepo.findById(idTransferencia)
+        Transferencia t = transferenciaRepo.findById(idTransferencia)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transferencia no encontrada"));
 
-        Long destino = ((Number) t.get("id_usuario_destino")).longValue();
-        if (!destino.equals(idSolicitante))
+        if (!t.getIdUsuarioDestino().equals(idSolicitante))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el destinatario puede aceptar la transferencia");
 
-        if (!"PENDIENTE".equals(t.get("estado")))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La transferencia ya fue " + t.get("estado"));
+        if (t.getEstado() != EstadoTransferencia.PENDIENTE)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La transferencia ya fue " + t.getEstado());
 
-        // sp_aceptar_transferencia actualiza el estado; el trigger fn_transferencia_aceptar
-        // cambia el titular y restaura la entrada a EMITIDA
-        jdbc.execute((java.sql.Connection conn) -> {
-            try (CallableStatement cs = conn.prepareCall("{ CALL sp_aceptar_transferencia(?, ?) }")) {
-                cs.setLong(1, idTransferencia);
-                cs.setLong(2, idSolicitante);
-                cs.execute();
-                return null;
-            }
-        });
+        // CALL sin escape JDBC: el driver no convierte a SELECT, PostgreSQL lo acepta directamente
+        jdbc.update("CALL sp_aceptar_transferencia(?, ?)", idTransferencia, idSolicitante);
     }
 
     @Transactional
     public void rechazar(Long idTransferencia, Long idSolicitante) {
-        Map<String, Object> t = transferenciaRepo.findById(idTransferencia)
+        Transferencia t = transferenciaRepo.findById(idTransferencia)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transferencia no encontrada"));
 
-        Long destino = ((Number) t.get("id_usuario_destino")).longValue();
-        if (!destino.equals(idSolicitante))
+        if (!t.getIdUsuarioDestino().equals(idSolicitante))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el destinatario puede rechazar la transferencia");
 
-        if (!"PENDIENTE".equals(t.get("estado")))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La transferencia ya fue " + t.get("estado"));
+        if (t.getEstado() != EstadoTransferencia.PENDIENTE)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La transferencia ya fue " + t.getEstado());
 
-        Long idEntrada = ((Number) t.get("id_entrada")).longValue();
-        transferenciaRepo.marcarRechazada(idTransferencia, idEntrada);
+        transferenciaRepo.marcarRechazada(idTransferencia, t.getIdEntrada());
     }
 
     @Transactional(readOnly = true)

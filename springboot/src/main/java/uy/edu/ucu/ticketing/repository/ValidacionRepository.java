@@ -23,51 +23,18 @@ public class ValidacionRepository {
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    // codigo es el hex del QR, chequeo que este activo y no vencido
     public Optional<Map<String, Object>> findTokenActivoPorCodigo(Long idEntrada, String codigoToken) {
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                SELECT id_token, id_entrada, codigo_token, activo, fecha_expiracion
-                FROM token_qr
+                SELECT id_token FROM token_qr
                 WHERE id_entrada = ? AND codigo_token = ?
                   AND activo = TRUE AND fecha_expiracion > NOW()
                 """, idEntrada, codigoToken);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    public Optional<Map<String, Object>> findEntrada(Long idEntrada) {
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT id_entrada, estado::text, id_evento_sector FROM entrada WHERE id_entrada = ?",
-                idEntrada);
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
-    }
-
-    public boolean funcionarioAsignadoAlSector(Long idFuncionario, Long idEvento, Long idSector) {
-        Integer count = jdbc.queryForObject("""
-                SELECT COUNT(*) FROM asignacion_funcionario_sector
-                WHERE id_funcionario = ? AND id_evento = ? AND id_sector = ?
-                """, Integer.class, idFuncionario, idEvento, idSector);
-        return count != null && count > 0;
-    }
-
-    public void insertarValidacion(Long idEntrada, Long idToken, Long idFuncionario,
-                                    Long idDispositivo, String codigoQr, String resultado) {
-        jdbc.update("""
-                INSERT INTO validacion (id_entrada, id_token, id_funcionario, id_dispositivo,
-                                        codigo_qr_validado, resultado)
-                VALUES (?, ?, ?, ?, ?, ?::dom_resultado_val)
-                """, idEntrada, idToken, idFuncionario, idDispositivo, codigoQr, resultado);
-    }
-
-    // esto es irreversible, también invalido los tokens que queden
-    public void consumirEntrada(Long idEntrada) {
-        jdbc.update("UPDATE entrada SET estado = 'CONSUMIDA' WHERE id_entrada = ?", idEntrada);
-        jdbc.update("UPDATE token_qr SET activo = FALSE WHERE id_entrada = ? AND activo = TRUE", idEntrada);
-    }
-
-    public Optional<Map<String, Object>> findEventoSectorDeEntrada(Long idEventoSector) {
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT id_evento, id_sector FROM evento_sector WHERE id_evento_sector = ?",
-                idEventoSector);
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+    public String validar(Long idEntrada, Long idToken, Long idFuncionario, Long idDispositivo) {
+        return jdbc.queryForObject(
+                "SELECT fn_validar_acceso_wrapper(?, ?, ?, ?)",
+                String.class, idEntrada, idToken, idFuncionario, idDispositivo);
     }
 }

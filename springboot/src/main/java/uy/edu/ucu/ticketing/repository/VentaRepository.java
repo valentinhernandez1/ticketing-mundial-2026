@@ -2,8 +2,9 @@ package uy.edu.ucu.ticketing.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import uy.edu.ucu.ticketing.model.Venta;
+import uy.edu.ucu.ticketing.model.enums.EstadoVenta;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,20 +18,16 @@ public class VentaRepository {
         this.jdbc = jdbc;
     }
 
-    public Long insertar(Long idUsuario, Long idComision, BigDecimal porcentaje,
-                         BigDecimal subtotal, BigDecimal montoComision, BigDecimal montoTotal) {
-        return jdbc.queryForObject("""
-                INSERT INTO venta (id_usuario, estado, id_comision, porcentaje_aplicado,
-                                   subtotal, monto_comision, monto_total)
-                VALUES (?, 'PENDIENTE', ?, ?, ?, ?, ?)
-                RETURNING id_venta
-                """, Long.class, idUsuario, idComision, porcentaje, subtotal, montoComision, montoTotal);
-    }
-
-    // necesito el dueño y el estado actual para validar la transición
-    public Optional<Map<String, Object>> findById(Long idVenta) {
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT id_usuario, estado::text FROM venta WHERE id_venta = ?", idVenta);
+    public Optional<Venta> findById(Long idVenta) {
+        List<Venta> rows = jdbc.query(
+                "SELECT id_venta, id_usuario, estado::text AS estado FROM venta WHERE id_venta = ?",
+                (rs, i) -> {
+                    Venta v = new Venta();
+                    v.setId(rs.getLong("id_venta"));
+                    v.setIdUsuario(rs.getLong("id_usuario"));
+                    v.setEstado(EstadoVenta.valueOf(rs.getString("estado")));
+                    return v;
+                }, idVenta);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 

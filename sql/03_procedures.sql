@@ -76,9 +76,8 @@ $$;
 -- ACEPTAR TRANSFERENCIA (solo el destinatario; el trigger cambia el titular)
 CREATE OR REPLACE PROCEDURE sp_aceptar_transferencia(
     IN p_id_transferencia BIGINT,
-    IN p_id_solicitante   BIGINT      -- usuario autenticado (debe ser el destino)
-)
-LANGUAGE plpgsql AS $$
+    IN p_id_solicitante   BIGINT
+) LANGUAGE plpgsql AS $$
 DECLARE
     v_estado  dom_estado_transf;
     v_destino BIGINT;
@@ -522,6 +521,32 @@ BEGIN
 END;
 $$;
 
+-- WRAPPER para llamar sp_registrar_compra desde JDBC con queryForObject
+-- (mismo motivo que el wrapper de validacion: el driver JDBC no soporta CALL con OUT)
+CREATE OR REPLACE FUNCTION fn_registrar_compra_wrapper(
+    p_id_usuario      BIGINT,
+    p_evento_sectores BIGINT[]
+) RETURNS BIGINT LANGUAGE plpgsql AS $$
+DECLARE v_id_venta BIGINT;
+BEGIN
+    CALL sp_registrar_compra(p_id_usuario, p_evento_sectores, v_id_venta);
+    RETURN v_id_venta;
+END;
+$$;
+
+-- WRAPPER para sp_transferir_entrada (tiene OUT id_transferencia)
+CREATE OR REPLACE FUNCTION fn_transferir_entrada_wrapper(
+    p_id_entrada     BIGINT,
+    p_id_destino     BIGINT,
+    p_id_solicitante BIGINT
+) RETURNS BIGINT LANGUAGE plpgsql AS $$
+DECLARE v_id_transferencia BIGINT;
+BEGIN
+    CALL sp_transferir_entrada(p_id_entrada, p_id_destino, p_id_solicitante, v_id_transferencia);
+    RETURN v_id_transferencia;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION fn_compras_usuario(p_id_usuario BIGINT)
 RETURNS TABLE (
     id_venta     BIGINT,
@@ -542,3 +567,41 @@ RETURNS TABLE (
      ORDER BY v.fecha DESC;
 $$;
 
+-- Wrappers para operaciones de administración (CALL con OUT params no soportado por JDBC)
+CREATE OR REPLACE FUNCTION fn_crear_estadio_wrapper(
+    p_id_administrador BIGINT, p_nombre VARCHAR, p_id_pais INT, p_ciudad VARCHAR, p_direccion VARCHAR
+) RETURNS BIGINT LANGUAGE plpgsql AS $$
+DECLARE v_id BIGINT;
+BEGIN
+    CALL sp_crear_estadio(p_id_administrador, p_nombre, p_id_pais, p_ciudad, p_direccion, v_id);
+    RETURN v_id;
+END; $$;
+
+CREATE OR REPLACE FUNCTION fn_agregar_sector_wrapper(
+    p_id_administrador BIGINT, p_id_estadio BIGINT, p_nombre CHAR, p_capacidad INT, p_precio_base NUMERIC
+) RETURNS BIGINT LANGUAGE plpgsql AS $$
+DECLARE v_id BIGINT;
+BEGIN
+    CALL sp_agregar_sector(p_id_administrador, p_id_estadio, p_nombre, p_capacidad, p_precio_base, v_id);
+    RETURN v_id;
+END; $$;
+
+CREATE OR REPLACE FUNCTION fn_crear_evento_wrapper(
+    p_id_administrador BIGINT, p_id_estadio BIGINT, p_id_local BIGINT, p_id_visitante BIGINT,
+    p_fecha_hora TIMESTAMPTZ, p_duracion_minutos INT
+) RETURNS BIGINT LANGUAGE plpgsql AS $$
+DECLARE v_id BIGINT;
+BEGIN
+    CALL sp_crear_evento(p_id_administrador, p_id_estadio, p_id_local, p_id_visitante,
+                         p_fecha_hora, p_duracion_minutos, v_id);
+    RETURN v_id;
+END; $$;
+
+CREATE OR REPLACE FUNCTION fn_habilitar_sector_wrapper(
+    p_id_administrador BIGINT, p_id_evento BIGINT, p_id_sector BIGINT, p_cupo INT, p_precio NUMERIC
+) RETURNS BIGINT LANGUAGE plpgsql AS $$
+DECLARE v_id BIGINT;
+BEGIN
+    CALL sp_habilitar_sector(p_id_administrador, p_id_evento, p_id_sector, p_cupo, p_precio, v_id);
+    RETURN v_id;
+END; $$;

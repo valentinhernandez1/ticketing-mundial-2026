@@ -76,4 +76,5 @@ END $$;
 
 -- Token QR de prueba para la entrada 1 (valido hasta 2026-12-31)
 INSERT INTO token_qr(id_entrada,codigo_token,fecha_expiracion,activo)
- VALUES (1,'TOKEN-DEMO-ENTRADA-1','2026-12-31 23:59:59+00',TRUE);
+ VALUES (1,'TOKEN-DEMO-ENTRADA-1','2026-12-31 23:59:59+00',TRUE)
+ ON CONFLICT (codigo_token) DO NOTHING;

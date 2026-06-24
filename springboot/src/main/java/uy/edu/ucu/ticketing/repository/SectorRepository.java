@@ -24,11 +24,10 @@ public class SectorRepository {
                 : Optional.of(((Number) rows.get(0).get("capacidad_maxima")).intValue());
     }
 
-    public Long insertar(Long idEstadio, String nombreSector, Integer capacidadMaxima, BigDecimal precioBase) {
-        return jdbc.queryForObject("""
-                INSERT INTO sector (id_estadio, nombre_sector, capacidad_maxima, precio_base)
-                VALUES (?, ?, ?, ?) RETURNING id_sector
-                """, Long.class, idEstadio, nombreSector, capacidadMaxima, precioBase);
+    public Long insertar(Long idAdmin, Long idEstadio, String nombreSector, Integer capacidadMaxima, BigDecimal precioBase) {
+        return jdbc.queryForObject(
+                "SELECT fn_agregar_sector_wrapper(?, ?, ?, ?, ?)",
+                Long.class, idAdmin, idEstadio, nombreSector, capacidadMaxima, precioBase);
     }
 
     public List<Map<String, Object>> sectoresDeEstadio(Long idEstadio) {

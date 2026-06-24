@@ -10,9 +10,8 @@ import uy.edu.ucu.ticketing.repository.DocumentoRepository;
 import uy.edu.ucu.ticketing.repository.TelefonoRepository;
 import uy.edu.ucu.ticketing.repository.UsuarioGeneralRepository;
 import uy.edu.ucu.ticketing.repository.UsuarioRepository;
+import uy.edu.ucu.ticketing.model.Usuario;
 import uy.edu.ucu.ticketing.security.JwtService;
-
-import java.util.Map;
 
 @Service
 public class AuthService {
@@ -60,15 +59,14 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest req) {
-        Map<String, Object> user = usuarioRepo.findByEmailConHash(req.email())
+        Usuario user = usuarioRepo.findByEmailConHash(req.email())
                 .orElseThrow(() -> new BadCredentialsException("Credenciales invalidas"));
 
-        if (!passwordEncoder.matches(req.password(), (String) user.get("password_hash")))
+        if (!passwordEncoder.matches(req.password(), user.getPasswordHash()))
             throw new BadCredentialsException("Credenciales invalidas");
 
-        Long idUsuario = ((Number) user.get("id_usuario")).longValue();
-        String rol = usuarioRepo.getRol(idUsuario);
-        String token = jwt.generar((String) user.get("email"), rol, idUsuario);
-        return new AuthResponse(token, rol, idUsuario);
+        String rol = usuarioRepo.getRol(user.getId());
+        String token = jwt.generar(user.getEmail(), rol, user.getId());
+        return new AuthResponse(token, rol, user.getId());
     }
 }

@@ -2,6 +2,7 @@ package uy.edu.ucu.ticketing.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import uy.edu.ucu.ticketing.model.Usuario;
 
 import java.util.List;
 import java.util.Map;
@@ -16,19 +17,31 @@ public class UsuarioRepository {
         this.jdbc = jdbc;
     }
 
-    // busco usuario por email para poder pasarle una entrada
-    public Optional<Map<String, Object>> findByEmail(String email) {
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT id_usuario FROM usuario WHERE email = ?", email);
+    public Optional<Usuario> findByEmail(String email) {
+        List<Usuario> rows = jdbc.query(
+                "SELECT id_usuario FROM usuario WHERE email = ?",
+                (rs, i) -> {
+                    Usuario u = new Usuario();
+                    u.setId(rs.getLong("id_usuario"));
+                    return u;
+                }, email);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    // busco con hash para el login
-    public Optional<Map<String, Object>> findByEmailConHash(String email) {
-        List<Map<String, Object>> rows = jdbc.queryForList("""
+    public Optional<Usuario> findByEmailConHash(String email) {
+        List<Usuario> rows = jdbc.query("""
                 SELECT id_usuario, email::text AS email, password_hash, nombre, apellido
                 FROM usuario WHERE email = ?
-                """, email);
+                """,
+                (rs, i) -> {
+                    Usuario u = new Usuario();
+                    u.setId(rs.getLong("id_usuario"));
+                    u.setEmail(rs.getString("email"));
+                    u.setPasswordHash(rs.getString("password_hash"));
+                    u.setNombre(rs.getString("nombre"));
+                    u.setApellido(rs.getString("apellido"));
+                    return u;
+                }, email);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 

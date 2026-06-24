@@ -2,6 +2,9 @@ package uy.edu.ucu.ticketing.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import uy.edu.ucu.ticketing.model.Entrada;
+import uy.edu.ucu.ticketing.model.enums.EstadoEntrada;
+import uy.edu.ucu.ticketing.model.enums.EstadoVenta;
 
 import java.security.SecureRandom;
 import java.sql.Timestamp;
@@ -63,18 +66,24 @@ public class TokenRepository {
         return Map.of("codigo", qrContent, "expira", expira.toString());
     }
 
-    // confirmo que la entrada sea del usuario antes de darle el QR
-    // BUG FIX: debe retornar estadoVenta para validar que la compra esté PAGA
-    public Optional<Map<String, Object>> findEntradaDeUsuario(Long idEntrada, Long idUsuario) {
-        List<Map<String, Object>> rows = jdbc.queryForList("""
+    public Optional<Entrada> findEntradaDeUsuario(Long idEntrada, Long idUsuario) {
+        List<Entrada> rows = jdbc.query("""
                 SELECT e.id_entrada,
                        e.id_usuario_actual,
-                       e.estado::text        AS estado,
-                       v.estado::text        AS estadoVenta
+                       e.estado::text  AS estado,
+                       v.estado::text  AS estado_venta
                 FROM entrada e
                 JOIN venta v ON v.id_venta = e.id_venta
                 WHERE e.id_entrada = ? AND e.id_usuario_actual = ?
-                """, idEntrada, idUsuario);
+                """,
+                (rs, i) -> {
+                    Entrada e = new Entrada();
+                    e.setId(rs.getLong("id_entrada"));
+                    e.setIdUsuarioActual(rs.getLong("id_usuario_actual"));
+                    e.setEstado(EstadoEntrada.valueOf(rs.getString("estado")));
+                    e.setEstadoVenta(EstadoVenta.valueOf(rs.getString("estado_venta")));
+                    return e;
+                }, idEntrada, idUsuario);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 

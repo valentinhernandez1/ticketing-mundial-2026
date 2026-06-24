@@ -32,7 +32,7 @@ public class AdminService {
         this.usuarioRepo = usuarioRepo;
     }
 
-    private Integer verificarJurisdiccionEstadio(Long idAdmin, Long idEstadio) {
+    private void verificarJurisdiccionEstadio(Long idAdmin, Long idEstadio) {
         Integer paisAdmin = usuarioRepo.paisDelAdmin(idAdmin)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No sos administrador"));
 
@@ -42,8 +42,6 @@ public class AdminService {
         if (!paisAdmin.equals(paisEstadio))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Solo podés gestionar estadios de tu país sede");
-
-        return paisAdmin;
     }
 
     @Transactional
@@ -55,14 +53,13 @@ public class AdminService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Solo podés crear estadios en tu país sede");
 
-        return estadioRepo.insertar(req.nombre(), req.idPais(), req.ciudad(), req.direccion());
+        return estadioRepo.insertar(idAdmin, req.nombre(), req.idPais(), req.ciudad(), req.direccion());
     }
 
     @Transactional
     public Long agregarSector(Long idAdmin, Long idEstadio, SectorRequest req) {
         verificarJurisdiccionEstadio(idAdmin, idEstadio);
-
-        return sectorRepo.insertar(idEstadio, req.nombreSector(),
+        return sectorRepo.insertar(idAdmin, idEstadio, req.nombreSector(),
                 req.capacidadMaxima(), req.precioBase());
     }
 
@@ -70,15 +67,11 @@ public class AdminService {
     public Long crearEvento(Long idAdmin, EventoRequest req) {
         verificarJurisdiccionEstadio(idAdmin, req.idEstadio());
 
-        // me fijo que el estadio no tenga otro evento en ese horario
         var fechaTs = req.fechaHoraInicio() == null ? null
                 : Timestamp.from(req.fechaHoraInicio().toInstant());
         int duracion = req.duracionMinutos() != null ? req.duracionMinutos() : 120;
 
-        if (eventoRepo.hayConflictoDeHorario(req.idEstadio(), fechaTs, duracion, null))
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Ya hay un evento en ese estadio en ese horario");
-
+        // el stored procedure y el constraint EXCLUDE USING gist garantizan la no-superposición
         return eventoRepo.insertar(idAdmin, req.idEstadio(),
                 req.idSeleccionLocal(), req.idSeleccionVisitante(), fechaTs, duracion);
     }
@@ -100,7 +93,12 @@ public class AdminService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "El cupo (" + req.cupo() + ") no puede superar la capacidad del sector (" + capacidad + ")");
 
-        return eventoSectorRepo.insertar(idEvento, req.idSector(), req.cupo(), req.precio());
+        return eventoSectorRepo.insertar(idAdmin, idEvento, req.idSector(), req.cupo(), req.precio());
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<java.util.Map<String, Object>> listarEventos() {
+        return eventoRepo.todos();
     }
 
     @Transactional
@@ -113,6 +111,6 @@ public class AdminService {
         if (!paisAdmin.equals(paisEvento))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El evento no es de tu jurisdicción");
 
-        eventoRepo.cancelar(idEvento);
+        eventoRepo.cancelar(idAdmin, idEvento);
     }
 }

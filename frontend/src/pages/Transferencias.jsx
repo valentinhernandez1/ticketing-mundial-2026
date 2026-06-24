@@ -11,7 +11,6 @@ const ESTADO_BADGE = {
   PENDIENTE: <span className="badge-yellow">PENDIENTE</span>,
   ACEPTADA: <span className="badge-green">ACEPTADA</span>,
   RECHAZADA: <span className="badge-red">RECHAZADA</span>,
-  CANCELADA: <span className="badge-zinc">CANCELADA</span>,
 }
 
 function ConfirmDialog({ title, message, onConfirm, onCancel, confirmLabel = 'Confirmar', danger = false }) {

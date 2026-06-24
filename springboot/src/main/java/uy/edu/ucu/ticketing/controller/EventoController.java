@@ -7,6 +7,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import uy.edu.ucu.ticketing.dto.AdminDtos.*;
 import uy.edu.ucu.ticketing.service.AdminService;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -16,6 +17,11 @@ public class EventoController {
 
     private final AdminService service;
     public EventoController(AdminService service) { this.service = service; }
+
+    @GetMapping
+    public List<Map<String, Object>> listar() {
+        return service.listarEventos();
+    }
 
     @PostMapping
     public ResponseEntity<Map<String,Object>> crear(@AuthenticationPrincipal Long uid,

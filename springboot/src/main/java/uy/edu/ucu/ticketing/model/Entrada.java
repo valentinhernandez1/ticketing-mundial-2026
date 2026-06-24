@@ -2,6 +2,7 @@ package uy.edu.ucu.ticketing.model;
 
 import lombok.*;
 import uy.edu.ucu.ticketing.model.enums.EstadoEntrada;
+import uy.edu.ucu.ticketing.model.enums.EstadoVenta;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -18,4 +19,5 @@ public class Entrada {
     private BigDecimal precio;
     private Integer cantidadTransferencias;
     private TokenQr tokenActivo;
+    private EstadoVenta estadoVenta;
 }
