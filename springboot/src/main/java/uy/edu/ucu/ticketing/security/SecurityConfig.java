@@ -28,6 +28,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
                         "/assets/**", "/*.js", "/*.css", "/*.svg", "/*.png",
                         "/app.js", "/styles.css").permitAll()
+                // rutas del frontend (React Router): sirven la app, los datos van por /api
+                .requestMatchers(HttpMethod.GET, "/login", "/register", "/comprar",
+                        "/mis-entradas", "/mis-compras", "/transferencias", "/validador",
+                        "/admin/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/paises").permitAll()
                 .requestMatchers("/api/compras/**").hasRole("USUARIO_GENERAL")
