@@ -9,9 +9,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- UUID para el codigo unico de la entrada
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ---------------------------------------------------------------------
--- DOMINIOS (tipos de estado controlados a nivel de BD)
--- ---------------------------------------------------------------------
+-- dominios (tipos de estado controlados a nivel de BD)
 DROP DOMAIN IF EXISTS dom_estado_venta CASCADE;
 CREATE DOMAIN dom_estado_venta AS VARCHAR(12)
     CHECK (VALUE IN ('PENDIENTE','CONFIRMADA','PAGA','ANULADA'));
@@ -39,7 +37,7 @@ CREATE TABLE pais (
     CONSTRAINT uq_pais_nombre     UNIQUE (nombre)
 );
 
--- Especializacion: paises que ademas son SEDE del mundial
+-- especializacion: paises que ademas son sede del mundial
 CREATE TABLE pais_sede (
     id_pais         INT     NOT NULL,
     fecha_alta_sede DATE    NOT NULL DEFAULT CURRENT_DATE,
@@ -108,7 +106,7 @@ CREATE TABLE telefono (
     CONSTRAINT ck_telefono_tipo  CHECK (tipo IN ('MOVIL','FIJO','TRABAJO','OTRO'))
 );
 
--- ----- Especializacion de USUARIO (disjunta, cada subtipo comparte la PK) -----
+-- especializacion de usuario (disjunta, cada subtipo comparte la PK)
 
 CREATE TABLE usuario_general (
     id_usuario           BIGINT  NOT NULL,
@@ -139,7 +137,7 @@ CREATE TABLE funcionario_validacion (
         REFERENCES usuario (id_usuario) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- Dispositivos de escaneo: OBLIGATORIAMENTE vinculados a un funcionario
+-- dispositivos de escaneo: siempre van vinculados a un funcionario
 CREATE TABLE dispositivo (
     id_dispositivo      BIGSERIAL   NOT NULL,
     identificador_fisico VARCHAR(60) NOT NULL,
@@ -214,7 +212,7 @@ CREATE TABLE evento (
     CONSTRAINT ck_evento_equipos CHECK (id_seleccion_local <> id_seleccion_visitante),
     CONSTRAINT ck_evento_dur     CHECK (duracion_minutos > 0),
     CONSTRAINT ck_evento_estado  CHECK (estado IN ('PROGRAMADO','EN_CURSO','FINALIZADO','CANCELADO')),
-    -- ANTI-SUPERPOSICION: no dos eventos solapados en el mismo estadio
+    -- no puede haber dos eventos solapados en el mismo estadio
     CONSTRAINT ex_evento_solape  EXCLUDE USING gist
         (id_estadio WITH =, periodo WITH &&)
 );
@@ -236,7 +234,7 @@ BEFORE INSERT OR UPDATE OF fecha_hora_inicio, duracion_minutos
 ON evento
 FOR EACH ROW EXECUTE FUNCTION fn_set_evento_periodo();
 
--- Sectores HABILITADOS para un evento (asociativa evento<->sector + cupo/precio)
+-- sectores habilitados para un evento (asociativa evento<->sector + cupo/precio)
 CREATE TABLE evento_sector (
     id_evento_sector BIGSERIAL    NOT NULL,
     id_evento        BIGINT       NOT NULL,
@@ -292,7 +290,7 @@ CREATE TABLE entrada (
     codigo_unico     UUID        NOT NULL DEFAULT gen_random_uuid(),
     id_venta         BIGINT      NOT NULL,        -- venta de origen
     id_evento_sector BIGINT      NOT NULL,        -- evento+sector concreto
-    id_usuario_actual BIGINT     NOT NULL,        -- TITULAR ACTUAL (cadena de custodia)
+    id_usuario_actual BIGINT     NOT NULL,        -- titular actual (cadena de custodia)
     fecha_emision    TIMESTAMPTZ NOT NULL DEFAULT now(),
     estado           dom_estado_entrada NOT NULL DEFAULT 'EMITIDA',
     precio           NUMERIC(12,2) NOT NULL,
@@ -423,12 +421,12 @@ CREATE INDEX idx_val_func            ON validacion (id_funcionario);
 CREATE INDEX idx_asig_evento         ON asignacion_funcionario_sector (id_evento);
 CREATE INDEX idx_audit_entrada       ON auditoria_transferencia (id_entrada);
 
--- Solo UN token activo por entrada (indice unico parcial)
+-- solo un token activo por entrada (indice unico parcial)
 CREATE UNIQUE INDEX uq_token_activo
     ON token_qr (id_entrada) WHERE (activo = TRUE);
 
--- Solo UNA validacion ACEPTADA por entrada (indice unico parcial).
--- Permite multiples registros RECHAZADO para auditoria de intentos fallidos.
+-- solo una validacion aceptada por entrada (indice unico parcial)
+-- los rechazados pueden repetirse, sirven para auditar intentos fallidos
 CREATE UNIQUE INDEX uq_validacion_aceptada
     ON validacion (id_entrada) WHERE (resultado = 'ACEPTADO');
 

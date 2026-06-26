@@ -62,13 +62,13 @@ BEGIN
         NEW.precio := v_precio_es;
     END IF;
 
-    -- REGLA: maximo 5 entradas por compra
+    -- maximo 5 entradas por compra
     SELECT COUNT(*) INTO v_cant_compra FROM entrada e WHERE e.id_venta = NEW.id_venta;
     IF v_cant_compra >= 5 THEN
         RAISE EXCEPTION 'Limite excedido: una compra no puede tener mas de 5 entradas (venta %)', NEW.id_venta;
     END IF;
 
-    -- REGLA: control de sobreaforo (cupo del evento y capacidad del sector)
+    -- control de sobreaforo (cupo del evento y capacidad del sector)
     SELECT COUNT(*) INTO v_vendidas
       FROM entrada e
      WHERE e.id_evento_sector = NEW.id_evento_sector
@@ -167,7 +167,7 @@ BEGIN
                )
            AND activo = TRUE;
 
-        -- Anular las ventas cuyos TODOS los items quedaron anulados por este evento
+        -- anular las ventas cuyos items quedaron todos anulados por este evento
         -- (una venta puede tener entradas de distintos eventos; solo anulamos si todas quedaron anuladas)
         UPDATE venta SET estado = 'ANULADA'
          WHERE id_venta IN (
@@ -207,7 +207,7 @@ BEGIN
             RAISE EXCEPTION 'La entrada % ya fue consumida y no puede transferirse', NEW.id_entrada;
         END IF;
 
-        -- REGLA: maximo 3 transferencias antes de la validacion
+        -- maximo 3 transferencias antes de la validacion
         IF v_cant >= 3 THEN
             RAISE EXCEPTION 'Limite excedido: la entrada % ya alcanzo 3 transferencias', NEW.id_entrada;
         END IF;

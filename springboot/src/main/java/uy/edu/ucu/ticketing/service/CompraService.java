@@ -34,11 +34,8 @@ public class CompraService {
         if (items.size() > 5)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No podés comprar más de 5 entradas por transacción");
 
-        // fn_registrar_compra_wrapper llama internamente a sp_registrar_compra:
-        // - valida que el usuario sea USUARIO_GENERAL
-        // - crea la venta (trigger aplica la comisión vigente)
-        // - crea N entradas (trigger valida aforo y aplica precio por sector)
-        // Usamos SELECT sobre función porque el driver JDBC no soporta CALL con OUT params.
+        // fn_registrar_compra_wrapper hace todo: valida el rol, crea la venta y las entradas.
+        // uso una funcion wrapper porque el driver JDBC no banca CALL con parametros OUT
         Long[] sectores = items.toArray(new Long[0]);
         return jdbc.execute((java.sql.Connection conn) -> {
             try (var ps = conn.prepareStatement("SELECT fn_registrar_compra_wrapper(?, ?)")) {

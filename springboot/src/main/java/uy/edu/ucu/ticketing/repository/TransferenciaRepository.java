@@ -38,7 +38,7 @@ public class TransferenciaRepository {
 
     public void marcarRechazada(Long idTransferencia, Long idEntrada) {
         jdbc.update("UPDATE transferencia SET estado = 'RECHAZADA' WHERE id_transferencia = ?", idTransferencia);
-        // Solo restaura a EMITIDA si la entrada sigue en TRANSFERIDA (guarda contra race condition)
+        // el AND estado='TRANSFERIDA' evita pisar el estado si llegan dos rechazos juntos
         jdbc.update("UPDATE entrada SET estado = 'EMITIDA' WHERE id_entrada = ? AND estado = 'TRANSFERIDA'", idEntrada);
     }
 

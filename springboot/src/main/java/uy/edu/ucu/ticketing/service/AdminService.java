@@ -71,7 +71,7 @@ public class AdminService {
                 : Timestamp.from(req.fechaHoraInicio().toInstant());
         int duracion = req.duracionMinutos() != null ? req.duracionMinutos() : 120;
 
-        // el stored procedure y el constraint EXCLUDE USING gist garantizan la no-superposición
+        // no chequeo solapamiento aca, lo hace el constraint EXCLUDE en la BD
         return eventoRepo.insertar(idAdmin, req.idEstadio(),
                 req.idSeleccionLocal(), req.idSeleccionVisitante(), fechaTs, duracion);
     }

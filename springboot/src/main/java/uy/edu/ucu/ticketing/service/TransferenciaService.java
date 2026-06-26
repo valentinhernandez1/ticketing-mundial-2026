@@ -39,10 +39,8 @@ public class TransferenciaService {
         if (destino.getId().equals(idSolicitante))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No podés transferirte la entrada a vos mismo");
 
-        // fn_transferir_entrada_wrapper llama internamente a sp_transferir_entrada:
-        // valida titularidad, límite de 3, pendientes duplicados, que el destino sea
-        // USUARIO_GENERAL, y bloquea la entrada en TRANSFERIDA.
-        // Usamos SELECT sobre función porque el driver JDBC no soporta CALL con OUT params.
+        // fn_transferir_entrada_wrapper valida titularidad, limite de 3, que el destino
+        // sea usuario general, y deja la entrada en TRANSFERIDA. wrapper por lo del OUT param
         return jdbc.queryForObject(
                 "SELECT fn_transferir_entrada_wrapper(?, ?, ?)",
                 Long.class,
