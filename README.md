@@ -74,8 +74,7 @@ entrega/
 ├── frontend/
 │   ├── src/
 │   │   ├── api/
-│   │   │   ├── client.js          # instancia Axios con interceptor JWT
-│   │   │   └── index.js           # funciones exportadas por módulo
+│   │   │   └── client.js          # instancia Axios con interceptor JWT
 │   │   ├── components/
 │   │   │   ├── QRModal.jsx        # modal con QR + countdown 30s
 │   │   │   └── ui/                # Alert, PageHeader, LoadingSpinner, EmptyState
@@ -101,13 +100,13 @@ entrega/
 │       ├── controller/                        # 14 controllers REST
 │       ├── dto/                               # request/response records
 │       ├── model/                             # POJOs + enums de dominio
-│       ├── repository/                        # 19 repositories con JdbcTemplate
+│       ├── repository/                        # 23 repositories con JdbcTemplate
 │       ├── security/                          # JwtService, JwtAuthFilter, SecurityConfig
 │       └── service/                           # 15 services con lógica de negocio
 │
 ├── sql/
 │   ├── 01_ddl.sql         # tablas, dominios, constraints, índices
-│   ├── 02_triggers.sql    # 12 triggers PL/pgSQL
+│   ├── 02_triggers.sql    # 11 triggers PL/pgSQL
 │   ├── 03_procedures.sql  # 13 stored procedures
 │   ├── 04_queries.sql     # consultas de reporte de referencia
 │   └── 05_seed.sql        # datos de prueba (usuarios, estadio, evento)
@@ -189,7 +188,7 @@ Los scripts se ejecutan en orden; Docker Compose los monta como init files de Po
 
 **`01_ddl.sql`** — Extensiones, tipos de dominio (`dom_estado_venta`, `dom_estado_entrada`, `dom_estado_transf`, `dom_resultado_val`), 23 tablas con constraints e índices.
 
-**`02_triggers.sql`** — 12 triggers PL/pgSQL:
+**`02_triggers.sql`** — 11 triggers PL/pgSQL:
 - `trg_venta_before_insert`: congela la comisión vigente
 - `trg_entrada_before_insert`: controla aforo, aplica precio del sector y límite de 5 por compra
 - `trg_recalc_venta`: recalcula totales al agregar o anular entradas
@@ -338,7 +337,7 @@ El proyecto funciona con los defaults de `application.yml`. Solo hace falta camb
 
 **Tokens QR**: el índice `UNIQUE ... WHERE activo = TRUE` garantiza un solo token activo por entrada. El trigger desactiva el anterior al generar uno nuevo. El frontend pide renovación cada 30 segundos; el token dura 35 para tolerar latencia de red.
 
-**Snapshots de precio y comisión**: `entrada.precio` y `venta.porcentaje_aplicado` se congelen al momento de la transacción. Cambios futuros de precio no afectan el historial.
+**Snapshots de precio y comisión**: `entrada.precio` y `venta.porcentaje_aplicado` se congelan al momento de la transacción. Cambios futuros de precio no afectan el historial.
 
 **Distribución de lógica**: las restricciones de integridad que deben cumplirse siempre (aforo, anti-solapamiento, consumo único, token único) van en la BD. Las reglas que requieren contexto de sesión (el usuario opera sobre sus recursos) van en los services Java.
 
