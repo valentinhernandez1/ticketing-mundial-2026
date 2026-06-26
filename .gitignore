@@ -42,5 +42,6 @@ package.json
 package-lock.json
 exportar_diagramas.js
 
-# Claude
+# Config local de editor
 .claude/
+.cursor/
